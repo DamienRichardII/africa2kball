@@ -3909,3 +3909,76 @@ body > * { position: relative; z-index: 1; }
     height: 36px !important;
   }
 }
+
+/* ============================================================
+   V19 — MENU MOBILE DÉFINITIF (display:none / display:flex)
+   Résout le conflit is-open vs open. Ce bloc est prioritaire.
+   ============================================================ */
+
+/* Toujours caché par défaut (écrase tous les blocs précédents) */
+.mobile-nav {
+  display: none !important;
+  position: fixed !important;
+  top: 66px !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1200 !important;
+  flex-direction: column !important;
+  padding: 18px 20px 22px !important;
+  background: rgba(5, 5, 5, 0.98) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  pointer-events: none !important;
+}
+
+/* Ouvert : is-open OU open (JS ajoute les deux) */
+.mobile-nav.is-open,
+.mobile-nav.open {
+  display: flex !important;
+  pointer-events: auto !important;
+}
+
+/* Liens dans le menu mobile */
+.mobile-nav a {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 48px !important;
+  color: var(--white) !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  font-size: .92rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  text-decoration: none !important;
+  padding: 0 !important;
+}
+.mobile-nav a:last-child { border-bottom: 0 !important; }
+.mobile-nav a.active { color: var(--orange) !important; }
+.mobile-nav .btn-primary {
+  justify-content: center !important;
+  margin-top: 14px !important;
+  min-height: 52px !important;
+  border-radius: 10px !important;
+  background: var(--orange) !important;
+  color: var(--white) !important;
+  border-bottom: 0 !important;
+}
+
+/* Burger — z-index supérieur au menu */
+.burger {
+  position: relative !important;
+  z-index: 1300 !important;
+  pointer-events: auto !important;
+}
+
+/* Mobile ≤ 900px : burger visible, nav desktop cachée */
+@media (max-width: 900px) {
+  .burger { display: flex !important; }
+  .header-nav, .header-cta-wrap { display: none !important; }
+}
+
+/* Desktop ≥ 901px : menu mobile toujours caché */
+@media (min-width: 901px) {
+  .mobile-nav { display: none !important; }
+  .burger     { display: none !important; }
+}

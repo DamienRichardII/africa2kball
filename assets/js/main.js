@@ -29,7 +29,7 @@ var ROSTER_STATUS = {
 };
 
 /* ============================================================
-   MENU BURGER — V17 (data-attribute, is-open, DOMContentLoaded)
+   MENU BURGER — V19 (is-open + open sur burger ET menu)
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function () {
   var menuToggle = document.querySelector('[data-mobile-menu-toggle]');
@@ -37,20 +37,28 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!menuToggle || !mobileMenu) return;
 
   function closeMenu() {
+    /* Menu nav */
     mobileMenu.classList.remove('is-open');
-    menuToggle.classList.remove('is-open');
-    menuToggle.classList.remove('open'); /* rétro-compat animation */
-    menuToggle.setAttribute('aria-expanded', 'false');
+    mobileMenu.classList.remove('open');
     mobileMenu.setAttribute('aria-hidden', 'true');
+    /* Burger */
+    menuToggle.classList.remove('is-open');
+    menuToggle.classList.remove('open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+    /* Body */
     document.body.classList.remove('mobile-menu-open');
   }
 
   function openMenu() {
+    /* Menu nav */
     mobileMenu.classList.add('is-open');
-    menuToggle.classList.add('is-open');
-    menuToggle.classList.add('open'); /* rétro-compat animation */
-    menuToggle.setAttribute('aria-expanded', 'true');
+    mobileMenu.classList.add('open');
     mobileMenu.setAttribute('aria-hidden', 'false');
+    /* Burger */
+    menuToggle.classList.add('is-open');
+    menuToggle.classList.add('open');
+    menuToggle.setAttribute('aria-expanded', 'true');
+    /* Body */
     document.body.classList.add('mobile-menu-open');
   }
 
