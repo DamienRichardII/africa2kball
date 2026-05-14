@@ -172,7 +172,8 @@ body > * { position: relative; z-index: 1; }
   gap: 0;
   z-index: 999;
 }
-.mobile-nav.open { display: flex; }
+.mobile-nav.open,
+.mobile-nav.is-open { display: flex; }
 .mobile-nav a {
   font-size: 1rem;
   font-weight: 600;
@@ -3728,79 +3729,12 @@ body > * { position: relative; z-index: 1; }
    maximale mobile (iOS Safari, Android Chrome, WebView)
    ============================================================ */
 
-/* Base : menu caché par défaut via visibility+opacity (plus fiable que
-   display:none sur certains moteurs mobiles pour les transitions) */
-.mobile-nav {
-  display: flex !important;        /* toujours dans le flux flex */
-  flex-direction: column !important;
-  position: fixed !important;
-  top: 80px !important;
-  left: 0 !important; right: 0 !important;
-  z-index: 1050 !important;        /* au-dessus du header (1000) */
-  padding: 18px 20px 22px !important;
-  gap: 0 !important;
-  background: rgba(5,5,5,.97) !important;
-  border-top: 1px solid rgba(255,255,255,.08) !important;
-  border-bottom: 1px solid rgba(255,255,255,.08) !important;
-  /* Caché par défaut */
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  transform: translateY(-10px) !important;
-  transition: opacity .22s ease, transform .22s ease, visibility .22s ease !important;
-}
-
-/* Ouvert — classe is-open ajoutée par JS */
-.mobile-nav.is-open {
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-  transform: translateY(0) !important;
-}
-
-/* Rétro-compatibilité : .open fonctionne aussi */
-.mobile-nav.open {
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-  transform: translateY(0) !important;
-}
-
-/* Liens du menu mobile */
-.mobile-nav a {
-  display: flex !important;
-  align-items: center !important;
-  min-height: 48px !important;
-  color: var(--white) !important;
-  font-weight: 700 !important;
-  letter-spacing: .04em !important;
-  text-transform: uppercase !important;
-  font-size: .92rem !important;
-  border-bottom: 1px solid rgba(255,255,255,.08) !important;
-  text-decoration: none !important;
-}
-.mobile-nav a:last-child { border-bottom: 0 !important; }
-.mobile-nav a.active { color: var(--orange) !important; }
-.mobile-nav .btn-primary {
-  justify-content: center !important;
-  margin-top: 14px !important;
-  min-height: 52px !important;
-  border-radius: 10px !important;
-  background: var(--orange) !important;
-  color: var(--white) !important;
-}
-
-/* Masquer complètement sur desktop */
-@media (min-width: 901px) {
-  .mobile-nav { display: none !important; }
-  .burger { display: none !important; }
-}
-
 /* ============================================================
-   V18 — LOGO FOND BLANC + MENU MOBILE DÉFINITIF
+   V20 — MENU MOBILE + LOGO FOND BLANC — BLOC UNIQUE AUTORITAIRE
+   Remplace V16 / V18 / V19 entièrement.
    ============================================================ */
 
-/* --- LOGO HEADER — fond blanc pill --- */
+/* ---- Logo header : fond blanc pill ---- */
 .header-logo {
   background: #ffffff !important;
   border-radius: 999px !important;
@@ -3818,30 +3752,12 @@ body > * { position: relative; z-index: 1; }
   display: block !important;
   object-fit: contain !important;
 }
-
-/* --- LOGO FOOTER — fond blanc pill --- */
-.footer-brand {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 12px !important;
-  align-items: flex-start !important;
-}
-.footer-brand-logo-wrap {
-  background: #ffffff;
-  border-radius: 999px;
-  padding: 5px 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.footer-brand-logo-wrap img {
-  height: 42px;
-  width: auto;
-  display: block;
-  object-fit: contain;
+@media (max-width: 900px) {
+  .header-logo { padding: 4px 10px !important; }
+  .header-logo img { height: 36px !important; }
 }
 
-/* Fallback si pas de wrapper : appliquer direct sur img du footer-brand */
+/* ---- Logo footer : fond blanc pill ---- */
 .footer-brand > img:first-child {
   background: #ffffff !important;
   border-radius: 999px !important;
@@ -3850,134 +3766,95 @@ body > * { position: relative; z-index: 1; }
   width: auto !important;
   display: block !important;
   object-fit: contain !important;
-  object-position: center !important;
-  max-width: none !important;
   box-sizing: content-box !important;
 }
 
-/* --- BURGER — animation is-open ET open --- */
+/* ---- MENU MOBILE : masqué par défaut, display:flex quand ouvert ---- */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  top: 66px;
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  flex-direction: column;
+  padding: 18px 20px 22px;
+  background: rgba(5, 5, 5, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Ouvert — JS ajoute les deux classes pour compatibilité maximale */
+.mobile-nav.is-open,
+.mobile-nav.open {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Liens du menu mobile */
+.mobile-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  color: var(--white);
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  font-size: .92rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-decoration: none;
+  padding: 0;
+}
+.mobile-nav a:last-child { border-bottom: 0; }
+.mobile-nav a.active { color: var(--orange); }
+.mobile-nav .btn-primary {
+  justify-content: center;
+  margin-top: 14px;
+  min-height: 52px;
+  border-radius: 10px;
+  background: var(--orange);
+  color: var(--white);
+  border-bottom: 0;
+}
+
+/* ---- BURGER : animation pour is-open ET open ---- */
 .burger {
   display: none;
   flex-direction: column;
   gap: 5px;
   cursor: pointer;
   padding: 8px;
-  background: transparent !important;
-  border: 0 !important;
+  background: transparent;
+  border: 0;
   margin-left: auto;
   position: relative;
-  z-index: 1201 !important;
-  pointer-events: auto !important;
+  z-index: 1300;
+  pointer-events: auto;
 }
 .burger span {
-  display: block !important;
-  width: 26px !important;
-  height: 2px !important;
-  background: var(--white) !important;
-  border-radius: 2px !important;
-  transition: transform .25s ease, opacity .25s ease !important;
+  display: block;
+  width: 26px;
+  height: 2px;
+  background: var(--white);
+  border-radius: 2px;
+  transition: transform .25s ease, opacity .25s ease;
 }
 .burger.is-open span:nth-child(1),
-.burger.open span:nth-child(1) {
-  transform: translateY(7px) rotate(45deg) !important;
-}
+.burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .burger.is-open span:nth-child(2),
-.burger.open span:nth-child(2) {
-  opacity: 0 !important;
-}
+.burger.open span:nth-child(2) { opacity: 0; }
 .burger.is-open span:nth-child(3),
-.burger.open span:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg) !important;
-}
+.burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-/* --- Z-INDEX hiérarchie header --- */
-.header { z-index: 1100 !important; }
-.mobile-nav { z-index: 1200 !important; }
-.burger { z-index: 1201 !important; }
+/* ---- Z-INDEX hiérarchie header ---- */
+.header { position: relative; z-index: 1100; }
 
-/* --- MOBILE (≤ 900px) --- */
+/* ---- Responsive ---- */
 @media (max-width: 900px) {
-  .burger { display: flex !important; }
-  .header-nav,
-  .header-cta-wrap { display: none !important; }
-
-  /* Logo légèrement plus petit sur mobile pour ne pas déborder */
-  .header-logo {
-    padding: 4px 10px !important;
-  }
-  .header-logo img {
-    height: 36px !important;
-  }
-}
-
-/* ============================================================
-   V19 — MENU MOBILE DÉFINITIF (display:none / display:flex)
-   Résout le conflit is-open vs open. Ce bloc est prioritaire.
-   ============================================================ */
-
-/* Toujours caché par défaut (écrase tous les blocs précédents) */
-.mobile-nav {
-  display: none !important;
-  position: fixed !important;
-  top: 66px !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 1200 !important;
-  flex-direction: column !important;
-  padding: 18px 20px 22px !important;
-  background: rgba(5, 5, 5, 0.98) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  pointer-events: none !important;
-}
-
-/* Ouvert : is-open OU open (JS ajoute les deux) */
-.mobile-nav.is-open,
-.mobile-nav.open {
-  display: flex !important;
-  pointer-events: auto !important;
-}
-
-/* Liens dans le menu mobile */
-.mobile-nav a {
-  display: flex !important;
-  align-items: center !important;
-  min-height: 48px !important;
-  color: var(--white) !important;
-  font-weight: 700 !important;
-  letter-spacing: .04em !important;
-  text-transform: uppercase !important;
-  font-size: .92rem !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  text-decoration: none !important;
-  padding: 0 !important;
-}
-.mobile-nav a:last-child { border-bottom: 0 !important; }
-.mobile-nav a.active { color: var(--orange) !important; }
-.mobile-nav .btn-primary {
-  justify-content: center !important;
-  margin-top: 14px !important;
-  min-height: 52px !important;
-  border-radius: 10px !important;
-  background: var(--orange) !important;
-  color: var(--white) !important;
-  border-bottom: 0 !important;
-}
-
-/* Burger — z-index supérieur au menu */
-.burger {
-  position: relative !important;
-  z-index: 1300 !important;
-  pointer-events: auto !important;
-}
-
-/* Mobile ≤ 900px : burger visible, nav desktop cachée */
-@media (max-width: 900px) {
-  .burger { display: flex !important; }
+  .header { height: 66px !important; padding: 0 20px !important; }
   .header-nav, .header-cta-wrap { display: none !important; }
+  .burger { display: flex !important; }
 }
-
-/* Desktop ≥ 901px : menu mobile toujours caché */
 @media (min-width: 901px) {
   .mobile-nav { display: none !important; }
   .burger     { display: none !important; }
