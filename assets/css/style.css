@@ -3859,3 +3859,31 @@ body > * { position: relative; z-index: 1; }
   .mobile-nav { display: none !important; }
   .burger     { display: none !important; }
 }
+
+/* ============================================================
+   V21 — SÉCURISATION FINALE MENU MOBILE (media query explicite)
+   ============================================================ */
+@media (max-width: 900px) {
+  .header {
+    z-index: 1100 !important;
+  }
+  .burger {
+    display: flex !important;
+    position: relative !important;
+    z-index: 1300 !important;
+    pointer-events: auto !important;
+  }
+  .mobile-nav {
+    position: fixed !important;
+    top: 66px !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1200 !important;
+    background: rgba(5, 5, 5, 0.98) !important;
+  }
+  .mobile-nav.open,
+  .mobile-nav.is-open {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+}

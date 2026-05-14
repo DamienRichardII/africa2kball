@@ -32,8 +32,14 @@ var ROSTER_STATUS = {
    MENU BURGER — V19 (is-open + open sur burger ET menu)
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function () {
-  var menuToggle = document.querySelector('[data-mobile-menu-toggle]');
-  var mobileMenu = document.querySelector('[data-mobile-header-menu]');
+  /* Fallback : data-attribute en priorité, id en secours */
+  var menuToggle = document.querySelector('[data-mobile-menu-toggle]') || document.getElementById('burger');
+  var mobileMenu = document.querySelector('[data-mobile-header-menu]')  || document.getElementById('mobileNav');
+
+  /* Diagnostic — retirer après validation */
+  console.log('[Africa2KBall] menuToggle:', menuToggle);
+  console.log('[Africa2KBall] mobileMenu:', mobileMenu);
+
   if (!menuToggle || !mobileMenu) return;
 
   function closeMenu() {
@@ -67,6 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
   menuToggle.addEventListener('click', function (e) {
     e.preventDefault();
     e.stopPropagation();
+    console.log('[Africa2KBall] burger clicked'); /* Diagnostic — retirer après validation */
     if (mobileMenu.classList.contains('is-open')) {
       closeMenu();
     } else {
