@@ -3795,3 +3795,117 @@ body > * { position: relative; z-index: 1; }
   .mobile-nav { display: none !important; }
   .burger { display: none !important; }
 }
+
+/* ============================================================
+   V18 — LOGO FOND BLANC + MENU MOBILE DÉFINITIF
+   ============================================================ */
+
+/* --- LOGO HEADER — fond blanc pill --- */
+.header-logo {
+  background: #ffffff !important;
+  border-radius: 999px !important;
+  padding: 5px 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+  z-index: 1001 !important;
+}
+.header-logo img {
+  height: 42px !important;
+  width: auto !important;
+  display: block !important;
+  object-fit: contain !important;
+}
+
+/* --- LOGO FOOTER — fond blanc pill --- */
+.footer-brand {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+}
+.footer-brand-logo-wrap {
+  background: #ffffff;
+  border-radius: 999px;
+  padding: 5px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.footer-brand-logo-wrap img {
+  height: 42px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+/* Fallback si pas de wrapper : appliquer direct sur img du footer-brand */
+.footer-brand > img:first-child {
+  background: #ffffff !important;
+  border-radius: 999px !important;
+  padding: 5px 12px !important;
+  height: 52px !important;
+  width: auto !important;
+  display: block !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  max-width: none !important;
+  box-sizing: content-box !important;
+}
+
+/* --- BURGER — animation is-open ET open --- */
+.burger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  padding: 8px;
+  background: transparent !important;
+  border: 0 !important;
+  margin-left: auto;
+  position: relative;
+  z-index: 1201 !important;
+  pointer-events: auto !important;
+}
+.burger span {
+  display: block !important;
+  width: 26px !important;
+  height: 2px !important;
+  background: var(--white) !important;
+  border-radius: 2px !important;
+  transition: transform .25s ease, opacity .25s ease !important;
+}
+.burger.is-open span:nth-child(1),
+.burger.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg) !important;
+}
+.burger.is-open span:nth-child(2),
+.burger.open span:nth-child(2) {
+  opacity: 0 !important;
+}
+.burger.is-open span:nth-child(3),
+.burger.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg) !important;
+}
+
+/* --- Z-INDEX hiérarchie header --- */
+.header { z-index: 1100 !important; }
+.mobile-nav { z-index: 1200 !important; }
+.burger { z-index: 1201 !important; }
+
+/* --- MOBILE (≤ 900px) --- */
+@media (max-width: 900px) {
+  .burger { display: flex !important; }
+  .header-nav,
+  .header-cta-wrap { display: none !important; }
+
+  /* Logo légèrement plus petit sur mobile pour ne pas déborder */
+  .header-logo {
+    padding: 4px 10px !important;
+  }
+  .header-logo img {
+    height: 36px !important;
+  }
+}

@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function closeMenu() {
     mobileMenu.classList.remove('is-open');
     menuToggle.classList.remove('is-open');
+    menuToggle.classList.remove('open'); /* rétro-compat animation */
     menuToggle.setAttribute('aria-expanded', 'false');
     mobileMenu.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('mobile-menu-open');
@@ -47,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function openMenu() {
     mobileMenu.classList.add('is-open');
     menuToggle.classList.add('is-open');
+    menuToggle.classList.add('open'); /* rétro-compat animation */
     menuToggle.setAttribute('aria-expanded', 'true');
     mobileMenu.setAttribute('aria-hidden', 'false');
     document.body.classList.add('mobile-menu-open');
