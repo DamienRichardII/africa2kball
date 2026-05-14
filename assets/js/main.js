@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
           'Payer mon accès Courtside — 10 €</a>';
       } else {
         paymentAction.innerHTML =
-          '<p class="courtside-pay-pending">Le lien de paiement Courtside doit encore être connecté par l'équipe Africa2KBall.</p>';
+          "<p class=\"courtside-pay-pending\">Le lien de paiement Courtside doit encore être connecté par l'équipe Africa2KBall.</p>";
       }
     }
   }

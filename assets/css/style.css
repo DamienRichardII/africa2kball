@@ -3887,3 +3887,19 @@ body > * { position: relative; z-index: 1; }
     flex-direction: column !important;
   }
 }
+
+/* ============================================================
+   V22 — FOOTER LOGO : corriger la pilule trop large
+   ============================================================ */
+.footer-brand > img:first-child {
+  background: #ffffff !important;
+  border-radius: 999px !important;
+  padding: 5px 12px !important;
+  height: 42px !important;
+  width: auto !important;
+  max-width: 140px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  display: inline-block !important;
+  box-sizing: border-box !important;
+}
