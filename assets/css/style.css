@@ -3721,3 +3721,77 @@ body > * { position: relative; z-index: 1; }
     padding: 56px 0;
   }
 }
+
+/* ============================================================
+   V16 — Menu mobile header — système complet (remplace open/display)
+   Approche : opacity + visibility + transform pour compatibilité
+   maximale mobile (iOS Safari, Android Chrome, WebView)
+   ============================================================ */
+
+/* Base : menu caché par défaut via visibility+opacity (plus fiable que
+   display:none sur certains moteurs mobiles pour les transitions) */
+.mobile-nav {
+  display: flex !important;        /* toujours dans le flux flex */
+  flex-direction: column !important;
+  position: fixed !important;
+  top: 80px !important;
+  left: 0 !important; right: 0 !important;
+  z-index: 1050 !important;        /* au-dessus du header (1000) */
+  padding: 18px 20px 22px !important;
+  gap: 0 !important;
+  background: rgba(5,5,5,.97) !important;
+  border-top: 1px solid rgba(255,255,255,.08) !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  /* Caché par défaut */
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(-10px) !important;
+  transition: opacity .22s ease, transform .22s ease, visibility .22s ease !important;
+}
+
+/* Ouvert — classe is-open ajoutée par JS */
+.mobile-nav.is-open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: translateY(0) !important;
+}
+
+/* Rétro-compatibilité : .open fonctionne aussi */
+.mobile-nav.open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: translateY(0) !important;
+}
+
+/* Liens du menu mobile */
+.mobile-nav a {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 48px !important;
+  color: var(--white) !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  font-size: .92rem !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  text-decoration: none !important;
+}
+.mobile-nav a:last-child { border-bottom: 0 !important; }
+.mobile-nav a.active { color: var(--orange) !important; }
+.mobile-nav .btn-primary {
+  justify-content: center !important;
+  margin-top: 14px !important;
+  min-height: 52px !important;
+  border-radius: 10px !important;
+  background: var(--orange) !important;
+  color: var(--white) !important;
+}
+
+/* Masquer complètement sur desktop */
+@media (min-width: 901px) {
+  .mobile-nav { display: none !important; }
+  .burger { display: none !important; }
+}

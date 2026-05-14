@@ -29,54 +29,69 @@ var ROSTER_STATUS = {
 };
 
 /* ============================================================
-   MENU BURGER
+   MENU BURGER — V17 (data-attribute, is-open, DOMContentLoaded)
    ============================================================ */
-(function () {
-  var burger    = document.getElementById('burger');
-  var mobileNav = document.getElementById('mobileNav');
-  if (!burger || !mobileNav) return;
+document.addEventListener('DOMContentLoaded', function () {
+  var menuToggle = document.querySelector('[data-mobile-menu-toggle]');
+  var mobileMenu = document.querySelector('[data-mobile-header-menu]');
+  if (!menuToggle || !mobileMenu) return;
 
   function closeMenu() {
-    mobileNav.classList.remove('open');
-    burger.classList.remove('open');
-    burger.setAttribute('aria-expanded', 'false');
-    mobileNav.setAttribute('aria-hidden', 'true');
+    mobileMenu.classList.remove('is-open');
+    menuToggle.classList.remove('is-open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+    mobileMenu.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('mobile-menu-open');
   }
 
   function openMenu() {
-    mobileNav.classList.add('open');
-    burger.classList.add('open');
-    burger.setAttribute('aria-expanded', 'true');
-    mobileNav.setAttribute('aria-hidden', 'false');
+    mobileMenu.classList.add('is-open');
+    menuToggle.classList.add('is-open');
+    menuToggle.setAttribute('aria-expanded', 'true');
+    mobileMenu.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('mobile-menu-open');
   }
 
-  /* Clic sur le burger — stopPropagation empêche le document listener
-     de déclencher sur le même événement (bug "ouvre et referme aussitôt") */
-  burger.addEventListener('click', function (e) {
+  /* Clic sur le burger — preventDefault + stopPropagation pour éviter
+     que le document listener referme le menu immédiatement */
+  menuToggle.addEventListener('click', function (e) {
+    e.preventDefault();
     e.stopPropagation();
-    if (mobileNav.classList.contains('open')) {
+    if (mobileMenu.classList.contains('is-open')) {
       closeMenu();
     } else {
       openMenu();
     }
   });
 
+  /* Fermeture au clic sur un lien du menu mobile */
+  mobileMenu.querySelectorAll('a').forEach(function (link) {
+    link.addEventListener('click', closeMenu);
+  });
+
   /* Fermeture au clic en dehors du menu */
   document.addEventListener('click', function (e) {
-    if (mobileNav.classList.contains('open') &&
-        !burger.contains(e.target) &&
-        !mobileNav.contains(e.target)) {
+    if (mobileMenu.classList.contains('is-open') &&
+        !mobileMenu.contains(e.target) &&
+        !menuToggle.contains(e.target)) {
       closeMenu();
     }
   });
 
-  /* Fermeture au clic sur un lien du menu mobile */
-  mobileNav.querySelectorAll('a').forEach(function (link) {
-    link.addEventListener('click', function () {
+  /* Fermeture à l'agrandissement de la fenêtre (desktop) */
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 900) {
       closeMenu();
-    });
+    }
   });
-})();
+
+  /* Fermeture via touche Escape */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      closeMenu();
+    }
+  });
+});
 
 /* ============================================================
    COMPTEUR BILLETS (billetterie.html)
