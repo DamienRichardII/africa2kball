@@ -36,20 +36,45 @@ var ROSTER_STATUS = {
   var mobileNav = document.getElementById('mobileNav');
   if (!burger || !mobileNav) return;
 
-  burger.addEventListener('click', function () {
-    var isOpen = mobileNav.classList.toggle('open');
-    burger.classList.toggle('open', isOpen);
-    burger.setAttribute('aria-expanded', String(isOpen));
-    mobileNav.setAttribute('aria-hidden', String(!isOpen));
+  function closeMenu() {
+    mobileNav.classList.remove('open');
+    burger.classList.remove('open');
+    burger.setAttribute('aria-expanded', 'false');
+    mobileNav.setAttribute('aria-hidden', 'true');
+  }
+
+  function openMenu() {
+    mobileNav.classList.add('open');
+    burger.classList.add('open');
+    burger.setAttribute('aria-expanded', 'true');
+    mobileNav.setAttribute('aria-hidden', 'false');
+  }
+
+  /* Clic sur le burger — stopPropagation empêche le document listener
+     de déclencher sur le même événement (bug "ouvre et referme aussitôt") */
+  burger.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (mobileNav.classList.contains('open')) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
   });
 
+  /* Fermeture au clic en dehors du menu */
   document.addEventListener('click', function (e) {
-    if (!burger.contains(e.target) && !mobileNav.contains(e.target)) {
-      mobileNav.classList.remove('open');
-      burger.classList.remove('open');
-      burger.setAttribute('aria-expanded', 'false');
-      mobileNav.setAttribute('aria-hidden', 'true');
+    if (mobileNav.classList.contains('open') &&
+        !burger.contains(e.target) &&
+        !mobileNav.contains(e.target)) {
+      closeMenu();
     }
+  });
+
+  /* Fermeture au clic sur un lien du menu mobile */
+  mobileNav.querySelectorAll('a').forEach(function (link) {
+    link.addEventListener('click', function () {
+      closeMenu();
+    });
   });
 })();
 
