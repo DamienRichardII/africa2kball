@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Africa2KBall — Espace Staff</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <style>
+    /* ============================================================
+       AFRICA2KBALL — STAFF CSS
+       Palette : noir / marron / orange — cohérente avec admin
+       ============================================================ */
+    :root {
+      --black:       #080604;
+      --black-soft:  #120d09;
+      --brown:       #2a170d;
+      --brown-light: #4a2a17;
+      --orange:      #d95722;
+      --orange-dark: #b94317;
+      --sand:        #efe0c8;
+      --beige:       #c9a77a;
+      --white:       #f8f1e7;
+      --muted:       #a89b8f;
+      --border:      rgba(239,224,200,0.15);
+      --font-title:  Impact, "Arial Black", "Franklin Gothic Medium", sans-serif;
+      --font-body:   Arial, Helvetica, sans-serif;
+      --radius:      8px;
+      --radius-lg:   12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background-color: var(--black);
+      color: var(--white);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--beige); text-decoration: none; }
+    a:hover { color: var(--orange); }
+    button, input, select, textarea { font-family: var(--font-body); font-size: .95rem; border: none; outline: none; background: none; }
+
+    /* TEXTURE */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        repeating-linear-gradient(45deg, transparent, transparent 80px, rgba(42,23,13,.1) 80px, rgba(42,23,13,.1) 81px),
+        repeating-linear-gradient(-45deg, transparent, transparent 80px, rgba(42,23,13,.07) 80px, rgba(42,23,13,.07) 81px);
+      pointer-events: none; z-index: 0;
+    }
+    body > * { position: relative; z-index: 1; }
+
+    /* ============================================================
+       STAFF HEADER
+       ============================================================ */
+    .staff-header {
+      background: var(--brown);
+      border-bottom: 2px solid var(--orange);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      height: 64px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .staff-header-logo { height: 36px; width: auto; flex-shrink: 0; }
+    .staff-header-title {
+      font-family: var(--font-title);
+      font-size: 1.1rem;
+      letter-spacing: .08em;
+      color: var(--white);
+      line-height: 1.1;
+    }
+    .staff-header-title span {
+      display: block;
+      font-family: var(--font-body);
+      font-size: .72rem;
+      font-weight: normal;
+      letter-spacing: .06em;
+      color: var(--beige);
+      text-transform: uppercase;
+    }
+    .staff-header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .staff-back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(217,87,34,.12);
+      border: 1px solid rgba(217,87,34,.35);
+      color: var(--orange);
+      padding: 7px 14px; border-radius: var(--radius);
+      font-size: .82rem; font-weight: bold; cursor: pointer;
+      transition: background .2s;
+    }
+    .staff-back-btn:hover { background: rgba(217,87,34,.22); color: var(--orange); }
+    #staffLogoutBtn {
+      display: none;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 7px 14px; border-radius: var(--radius);
+      font-size: .8rem; cursor: pointer;
+      transition: background .2s;
+    }
+    #staffLogoutBtn:hover { background: rgba(255,255,255,.1); color: var(--white); }
+
+    /* ============================================================
+       MAIN LAYOUT
+       ============================================================ */
+    .staff-main {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 48px 20px 80px;
+    }
+
+    /* ============================================================
+       LOGIN SCREEN
+       ============================================================ */
+    #loginScreen {
+      width: 100%;
+      max-width: 420px;
+    }
+    .login-card {
+      background: var(--black-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .login-card-header {
+      background: var(--brown);
+      padding: 28px 30px 24px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .login-card-header .login-icon {
+      width: 52px; height: 52px;
+      background: rgba(217,87,34,.15);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+      color: var(--orange);
+    }
+    .login-card-header h1 {
+      font-family: var(--font-title);
+      font-size: 1.4rem;
+      letter-spacing: .08em;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+    .login-card-header p {
+      font-size: .82rem;
+      color: var(--muted);
+    }
+    .login-card-body {
+      padding: 28px 30px;
+    }
+    .login-field {
+      margin-bottom: 18px;
+    }
+    .login-field label {
+      display: block;
+      font-size: .74rem;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--beige);
+      margin-bottom: 6px;
+    }
+    .login-input {
+      width: 100%;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      color: var(--white);
+      font-size: .95rem;
+      transition: border-color .2s;
+    }
+    .login-input::placeholder { color: var(--muted); }
+    .login-input:focus { border-color: rgba(217,87,34,.55); }
+    .login-btn {
+      width: 100%;
+      background: var(--orange);
+      border: none;
+      color: var(--white);
+      padding: 13px;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: bold;
+      letter-spacing: .04em;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background .2s;
+    }
+    .login-btn:hover { background: var(--orange-dark); }
+    .login-error {
+      display: none;
+      margin-top: 14px;
+      background: rgba(220,53,69,.12);
+      border: 1px solid rgba(220,53,69,.3);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: .82rem;
+      color: #ff7b8a;
+      text-align: center;
+    }
+    .login-note {
+      margin-top: 18px;
+      text-align: center;
+      font-size: .74rem;
+      color: var(--muted);
+    }
+
+    /* ============================================================
+       STAFF DASHBOARD — FORMULAIRE PASS INVITÉ
+       ============================================================ */
+    #staffDashboard {
+      display: none;
+      width: 100%;
+      max-width: 680px;
+    }
+    .staff-welcome {
+      margin-bottom: 24px;
+    }
+    .staff-welcome h2 {
+      font-family: var(--font-title);
+      font-size: 1.4rem;
+      letter-spacing: .06em;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+    .staff-welcome p {
+      font-size: .85rem;
+      color: var(--muted);
+    }
+    .staff-welcome .staff-name-badge {
+      display: inline-block;
+      background: rgba(217,87,34,.15);
+      border: 1px solid rgba(217,87,34,.3);
+      color: var(--orange);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: .82rem;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    /* FORM CARD */
+    .staff-card {
+      background: var(--black-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .staff-card-header {
+      background: var(--brown);
+      padding: 16px 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .staff-card-header h3 {
+      font-family: var(--font-title);
+      font-size: 1.05rem;
+      letter-spacing: .06em;
+      color: var(--white);
+    }
+    .staff-card-body { padding: 24px 22px; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .form-row.full { grid-template-columns: 1fr; }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: .74rem;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--beige);
+    }
+    .form-group label .req { color: var(--orange); }
+    .form-input,
+    .form-select,
+    .form-textarea {
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      color: var(--white);
+      font-size: .9rem;
+      transition: border-color .2s;
+      width: 100%;
+    }
+    .form-input::placeholder,
+    .form-textarea::placeholder { color: var(--muted); }
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus { border-color: rgba(217,87,34,.55); outline: none; }
+    .form-select option { background: var(--brown); color: var(--white); }
+    .form-textarea { resize: vertical; min-height: 80px; }
+
+    .form-note {
+      font-size: .76rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* RADIO TYPE PASS */
+    .pass-type-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .pass-type-option {
+      position: relative;
+    }
+    .pass-type-option input[type="radio"] {
+      position: absolute; opacity: 0; width: 0; height: 0;
+    }
+    .pass-type-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 12px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      text-align: center;
+    }
+    .pass-type-label .pt-icon { font-size: 1.4rem; }
+    .pass-type-label .pt-name { font-size: .8rem; font-weight: bold; color: var(--white); }
+    .pass-type-label .pt-desc { font-size: .7rem; color: var(--muted); }
+    .pass-type-option input:checked + .pass-type-label {
+      border-color: rgba(217,87,34,.6);
+      background: rgba(217,87,34,.1);
+    }
+    .pass-type-option input:checked + .pass-type-label .pt-name { color: var(--orange); }
+
+    /* SUBMIT BUTTON */
+    .staff-submit-btn {
+      width: 100%;
+      background: var(--orange);
+      border: none;
+      color: var(--white);
+      padding: 14px;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: bold;
+      letter-spacing: .04em;
+      cursor: pointer;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background .2s;
+    }
+    .staff-submit-btn:hover { background: var(--orange-dark); }
+
+    /* SUCCESS / ERROR MESSAGES */
+    .staff-msg {
+      display: none;
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: .88rem;
+      margin-top: 14px;
+    }
+    .staff-msg.success {
+      background: rgba(34,197,94,.1);
+      border: 1px solid rgba(34,197,94,.3);
+      color: #5adc7a;
+    }
+    .staff-msg.error {
+      background: rgba(220,53,69,.1);
+      border: 1px solid rgba(220,53,69,.3);
+      color: #ff7b8a;
+    }
+
+    /* PASSES LIST */
+    .staff-passes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .staff-pass-item {
+      background: var(--brown);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .staff-pass-item .pi-icon {
+      width: 38px; height: 38px;
+      background: rgba(217,87,34,.12);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      color: var(--orange);
+      font-size: 1.1rem;
+    }
+    .staff-pass-item .pi-body { flex: 1; }
+    .staff-pass-item .pi-name { font-weight: bold; color: var(--white); font-size: .9rem; }
+    .staff-pass-item .pi-meta { font-size: .76rem; color: var(--muted); }
+    .staff-pass-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .pb-vip      { background: rgba(217,87,34,.18); color: var(--orange); border: 1px solid rgba(217,87,34,.4); }
+    .pb-court    { background: rgba(217,87,34,.12); color: #f59e0b; border: 1px solid rgba(245,158,11,.3); }
+    .pb-standard { background: rgba(239,224,200,.1); color: var(--sand); border: 1px solid var(--border); }
+
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
+    @media (max-width: 600px) {
+      .staff-header { padding: 0 14px; }
+      .staff-main { padding: 28px 12px 60px; }
+      .login-card-body { padding: 22px 20px; }
+      .staff-card-body { padding: 18px 16px; }
+      .form-row { grid-template-columns: 1fr; }
+      .pass-type-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="staff-page">
+
+<!-- ================================================================
+     STAFF HEADER
+================================================================ -->
+<header class="staff-header">
+  <img src="assets/images/logo-africa2kball.png" alt="Africa2KBall" class="staff-header-logo" />
+  <div class="staff-header-title">
+    Espace Staff
+    <span>Africa2KBall — Édition 3</span>
+  </div>
+  <div class="staff-header-right">
+    <button id="staffLogoutBtn" onclick="staffLogout()">Déconnexion</button>
+    <a href="index.html" class="staff-back-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Retour au site
+    </a>
+  </div>
+</header>
+
+<!-- ================================================================
+     MAIN
+================================================================ -->
+<main class="staff-main">
+
+  <!-- ==============================
+       ÉCRAN DE CONNEXION
+  ============================== -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <div class="login-card-header">
+        <div class="login-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h1>Espace Staff</h1>
+        <p>Accès réservé à l'équipe organisatrice Africa2KBall</p>
+      </div>
+      <div class="login-card-body">
+        <form id="loginForm" onsubmit="handleLogin(event)">
+          <div class="login-field">
+            <label for="staffId">Identifiant</label>
+            <input type="text" id="staffId" class="login-input" placeholder="Votre identifiant" autocomplete="username" />
+          </div>
+          <div class="login-field">
+            <label for="staffCode">Code d'accès</label>
+            <input type="password" id="staffCode" class="login-input" placeholder="Code à 2+ chiffres" autocomplete="current-password" />
+          </div>
+          <button type="submit" class="login-btn">Accéder à l'espace staff</button>
+          <div class="login-error" id="loginError">Identifiant ou code incorrect. Réessayez.</div>
+        </form>
+        <p class="login-note">Accès protégé · Réservé à l'équipe Africa2KBall</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================
+       DASHBOARD STAFF
+  ============================== -->
+  <div id="staffDashboard">
+
+    <div class="staff-welcome">
+      <h2>Bienvenue 👋</h2>
+      <p>Vous êtes connecté(e) à l'espace staff Africa2KBall. Utilisez ce formulaire pour enregistrer un invité et générer un pass d'entrée.</p>
+      <span class="staff-name-badge" id="staffNameBadge">Staff</span>
+    </div>
+
+    <!-- FORMULAIRE GUEST PASS -->
+    <div class="staff-card">
+      <div class="staff-card-header">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+        <h3>Enregistrer un invité</h3>
+      </div>
+      <div class="staff-card-body">
+        <form id="guestPassForm" onsubmit="handleGuestPass(event)">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="guestFirstName">Prénom <span class="req">*</span></label>
+              <input type="text" id="guestFirstName" class="form-input" placeholder="Prénom de l'invité" required />
+            </div>
+            <div class="form-group">
+              <label for="guestLastName">Nom <span class="req">*</span></label>
+              <input type="text" id="guestLastName" class="form-input" placeholder="Nom de famille" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="guestEmail">Email <span class="req">*</span></label>
+              <input type="email" id="guestEmail" class="form-input" placeholder="email@exemple.com" required />
+            </div>
+            <div class="form-group">
+              <label for="guestPhone">Téléphone</label>
+              <input type="tel" id="guestPhone" class="form-input" placeholder="06 XX XX XX XX" />
+            </div>
+          </div>
+
+          <div class="form-row full">
+            <div class="form-group">
+              <label>Type de pass <span class="req">*</span></label>
+              <div class="pass-type-grid">
+                <div class="pass-type-option">
+                  <input type="radio" name="passType" id="passStandard" value="Standard" checked />
+                  <label class="pass-type-label" for="passStandard">
+                    <span class="pt-icon">🎫</span>
+                    <span class="pt-name">Standard</span>
+                    <span class="pt-desc">Entrée générale</span>
+                  </label>
+                </div>
+                <div class="pass-type-option">
+                  <input type="radio" name="passType" id="passCourtside" value="Courtside" />
+                  <label class="pass-type-label" for="passCourtside">
+                    <span class="pt-icon">⭐</span>
+                    <span class="pt-name">Courtside</span>
+                    <span class="pt-desc">Bord de terrain</span>
+                  </label>
+                </div>
+                <div class="pass-type-option">
+                  <input type="radio" name="passType" id="passVip" value="VIP" />
+                  <label class="pass-type-label" for="passVip">
+                    <span class="pt-icon">🏆</span>
+                    <span class="pt-name">VIP</span>
+                    <span class="pt-desc">Accès zone staff</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row full">
+            <div class="form-group">
+              <label for="guestStaff">Membre staff responsable <span class="req">*</span></label>
+              <select id="guestStaff" class="form-select" required>
+                <option value="">— Sélectionner —</option>
+                <option value="Fodie">Fodie</option>
+                <option value="Samuel">Samuel</option>
+                <option value="Dawari">Dawari</option>
+                <option value="Abloss">Abloss</option>
+                <option value="Chris">Chris</option>
+                <option value="Ornella">Ornella</option>
+                <option value="Junior">Junior</option>
+                <option value="Dylan">Dylan</option>
+                <option value="Damien">Damien</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row full">
+            <div class="form-group">
+              <label for="guestNote">Note (facultatif)</label>
+              <textarea id="guestNote" class="form-textarea" placeholder="Relation avec l'invité, accès spéciaux, remarques…"></textarea>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="sendEmail" style="margin-right:6px;" />
+                Envoyer une confirmation par email à l'invité
+              </label>
+              <p class="form-note">Ouvrira votre client mail avec le message pré-rempli.</p>
+            </div>
+          </div>
+
+          <button type="submit" class="staff-submit-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Enregistrer le pass invité
+          </button>
+
+          <div class="staff-msg success" id="guestPassSuccess">
+            ✓ Pass enregistré avec succès ! L'invité figure maintenant dans la liste.
+          </div>
+          <div class="staff-msg error" id="guestPassError">
+            ✗ Erreur lors de l'enregistrement. Vérifiez les champs obligatoires.
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- LISTE DES PASSES ENREGISTRÉS (session en cours) -->
+    <div class="staff-card">
+      <div class="staff-card-header">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <h3>Passes enregistrés (session)</h3>
+        <span id="passCount" style="margin-left:auto; background:rgba(217,87,34,.15); border:1px solid rgba(217,87,34,.3); color:var(--orange); font-size:.75rem; font-weight:bold; padding:3px 10px; border-radius:20px;">0 pass</span>
+      </div>
+      <div class="staff-card-body">
+        <div id="staffPassesList" class="staff-passes-list">
+          <p style="color:var(--muted); font-size:.85rem; text-align:center; padding: 10px 0;">Aucun pass enregistré pour cette session.</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /#staffDashboard -->
+
+</main><!-- /.staff-main -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/staff.js"></script>
+</body>
+</html>

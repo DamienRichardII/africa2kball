@@ -10,10 +10,7 @@ var FORM_ENDPOINTS = {
 };
 
 
-/* --- PAIEMENT COURTSIDE --- */
-var PAYMENT_LINKS = {
-  courtside: '' /* Renseigner avec l'URL Stripe Payment Link avant mise en ligne */
-};
+/* --- PAIEMENT COURTSIDE — désactivé, Courtside est gratuit (V23) --- */
 /* ============================================================
    STATUT ROSTERS — Édition 3 (compositions à venir)
    ============================================================ */
@@ -150,39 +147,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 /* ============================================================
-   PAIEMENT COURTSIDE — détection + affichage zone paiement
+   COURTSIDE INFO — affichage bloc informatif (Courtside gratuit)
    ============================================================ */
 (function () {
-  var types = document.querySelectorAll('#ticketTypes .ticket-type');
-  var paymentZone = document.getElementById('courtsidePaymentZone');
-  var paymentAction = document.getElementById('courtsidePaymentAction');
-  if (!types.length || !paymentZone) return;
+  var types    = document.querySelectorAll('#ticketTypes .ticket-type');
+  var infoZone = document.getElementById('courtsideInfoZone');
+  if (!types.length || !infoZone) return;
 
-  function updateCourtsideZone() {
+  function updateCourtsideInfo() {
     var selected = document.querySelector('#ticketTypes input[type="radio"]:checked');
-    var isCourt = selected && selected.value === 'courtside';
-    paymentZone.style.display = isCourt ? '' : 'none';
-    if (!paymentAction) return;
-    if (isCourt) {
-      if (PAYMENT_LINKS.courtside) {
-        paymentAction.innerHTML =
-          '<a href="' + PAYMENT_LINKS.courtside + '" target="_blank" rel="noopener noreferrer" class="btn-primary courtside-pay-btn">' +
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>' +
-          'Payer mon accès Courtside — 10 €</a>';
-      } else {
-        paymentAction.innerHTML =
-          "<p class=\"courtside-pay-pending\">Le lien de paiement Courtside doit encore être connecté par l'équipe Africa2KBall.</p>";
-      }
-    }
+    var isCourt  = selected && selected.value === 'courtside';
+    infoZone.style.display = isCourt ? '' : 'none';
   }
 
   types.forEach(function (label) {
     label.addEventListener('click', function () {
-      setTimeout(updateCourtsideZone, 50);
+      setTimeout(updateCourtsideInfo, 50);
     });
   });
 
-  updateCourtsideZone();
+  updateCourtsideInfo();
 })();
 
 /* ============================================================

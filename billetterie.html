@@ -97,7 +97,7 @@
     </div>
     <div class="comment-note">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      La demande de billet ne vaut pas confirmation définitive. L'équipe Africa2KBall reviendra vers vous avec les informations de validation et de paiement si nécessaire.
+      La demande de billet ne vaut pas confirmation définitive. Les places Courtside sont gratuites mais limitées et soumises à validation par l'équipe Africa2KBall.
     </div>
   </div>
 </section><!-- /.comment-section -->
@@ -162,7 +162,7 @@
                   <span class="ticket-type-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                   </span>
-                  <span class="ticket-type-label">Courtside &mdash; 10 &euro;</span>
+                  <span class="ticket-type-label">Courtside &mdash; Gratuit <small style="display:block;font-size:.78em;opacity:.7;font-weight:400;">Places limitées · Soumis à validation</small></span>
                 </label>
                 <label class="ticket-type">
                   <input type="radio" name="ticket_type" value="media" />
@@ -189,15 +189,11 @@
 
 
 
-            <!-- PAIEMENT COURTSIDE — affiché dynamiquement par JS -->
-            <div class="courtside-payment-zone" id="courtsidePaymentZone" style="display:none;">
-              <div class="courtside-payment-card">
-                <div class="courtside-payment-header">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                  <strong>Paiement Courtside &mdash; 10 &euro;</strong>
-                </div>
-                <p class="courtside-payment-desc">Paiement s&eacute;curis&eacute; disponible pour les places Courtside&nbsp;: Stripe, Apple Pay et carte bancaire.</p>
-                <div id="courtsidePaymentAction"></div>
+            <!-- COURTSIDE INFO — affiché dynamiquement par JS -->
+            <div class="courtside-info-zone" id="courtsideInfoZone" style="display:none;">
+              <div class="courtside-info-card">
+                <strong>Courtside — Gratuit</strong>
+                <p>Les places Courtside sont limitées et soumises à validation par l'équipe Africa2KBall. Votre demande sera examinée et vous recevrez une confirmation par email.</p>
               </div>
             </div>
 
@@ -279,7 +275,7 @@
             <h3 class="tarifs-title">Tarifs &amp; informations</h3>
             <ul class="tarifs-list">
               <li><span>Standard</span><span class="tarifs-val">Gratuit</span></li>
-              <li><span>Courtside</span><span class="tarifs-val">10 &euro;</span></li>
+              <li><span>Courtside</span><span class="tarifs-val">Gratuit <span style="font-size:.8em;opacity:.7">· Places limitées</span></span></li>
               <li><span>M&eacute;dia</span><span class="tarifs-val">Soumis &agrave; validation</span></li>
               <li><span>Pass invit&eacute;</span><span class="tarifs-val">Invitations officielles</span></li>
             </ul>

@@ -1028,3 +1028,339 @@ Fonctions : `renderKPIs()`, `renderMediaTable()`, `renderBilletTable()`, `filter
 | 🟢 Fait | Numéro de téléphone retiré du footer | ✅ V13 |
 | 🟢 Fait | Admin dashboard HTML + JS | ✅ V13 |
 | 🟡 Souhaitable | Tests mobile réel (iOS Safari + Android Chrome) | ⏳ En attente |
+
+---
+
+## V14–V22 — Corrections mobiles, menu burger, visuels, cache-busting
+
+**Dates :** 14–20 mai 2026
+
+### Résumé des versions
+
+| Version | Date | Corrections principales |
+|---|---|---|
+| V14 | 14/05 | Drapeaux nations.html, photo Caraïbes, roster à venir, champions.html icônes → drapeaux, index.html section YouTube |
+| V15 | 14/05 | champions.html MVP Mathieu → Melvyn, vidéos mp4, nations.html cover Mali |
+| V16 | 15/05 | YouTube start=676, CSS menu mobile (debut) |
+| V17 | 15/05 | Menu mobile — data-attributes, DOMContentLoaded, is-open/open classes |
+| V18 | 15/05 | Logo fond blanc header + footer, CSS menu mobile consolidation |
+| V19 | 16/05 | HOTFIX menu mobile — `.open` manquant sur `mobileMenu` (nav), ajout sur les deux éléments |
+| V20 | 16/05 | CSS cleanup — suppression blocs conflictuels V16/V18/V19, bloc V20 unique autoritaire (display:none/flex) |
+| V21 | 17/05 | CRITIQUE — `index.html` n'avait aucun `<script src="main.js">`. Ajout `defer` + cache-busting `?v=mobile-menu-v21` sur 10 pages |
+| V22 | 17/05 | CRITIQUE — SyntaxError JS (`l'équipe` apostrophe non échappée ligne 174). index.html tronqué reconstruit. nations.html `</html>` manquant ajouté. Cache-busting `?v=menu-final-jsfix` |
+
+---
+
+## V23 — Champions étoilés, Courtside gratuit, Admin Supabase, Staff
+
+**Date :** 20 mai 2026  
+**Périmètre :** index.html, nations.html, champions.html, billetterie.html, main.js, admin.html, admin.js (refonte), staff.html (création), staff.js (création), style.css (bloc V23)
+
+---
+
+### 1. Étoiles champions — Caraïbes & Sénégal
+
+**Contexte :** Caraïbes (Édition 1) et Sénégal (Édition 2) sont les deux nations championnes. Une étoile dorée/orange premium leur est ajoutée sur 3 pages.
+
+**CSS V23 — style.css :**
+```css
+.champion-star, .nation-star {
+  display: inline-flex; align-items: center;
+  margin-left: 5px; color: var(--orange);
+  font-size: 0.72em; vertical-align: middle;
+}
+.champion-star svg, .nation-star svg { width: 0.85em; height: 0.85em; fill: var(--orange); }
+```
+
+**HTML (star span) :**
+```html
+<span class="nation-star" aria-label="Champion">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+</span>
+```
+
+| Page | Élément modifié | Changement |
+|---|---|---|
+| `index.html` | `.nation-card-home` Caraïbes | Label "Champion Édition 1" + star |
+| `index.html` | `.nation-card-home` Sénégal | Label "Champion Édition 2" + star |
+| `nations.html` | `.nation-card-name` Caraïbes | Star ajoutée |
+| `nations.html` | `.nation-card-name` Sénégal | Star ajoutée |
+| `champions.html` | `.champion-name` Caraïbes | `.champion-star` ajoutée |
+| `champions.html` | `.champion-name` Sénégal | `.champion-star` ajoutée |
+
+**Correction champions.html :**
+- MVP Édition 1 : **Melvyn Da Silva** (correction Mathieu → Melvyn)
+
+---
+
+### 2. Courtside gratuit — validation requise
+
+**Contexte :** Les places Courtside ne sont plus payantes. Entrée gratuite, soumise à validation par l'équipe Africa2KBall.
+
+**billetterie.html — modifications :**
+- Label radio : `Courtside — Gratuit` (remplace `Courtside — 10 €`)
+- Sous-note : `Places limitées · Soumis à validation`
+- Tarif affiché : `Gratuit · Places limitées`
+- Zone paiement `courtsidePaymentZone` supprimée — remplacée par `courtsideInfoZone` :
+```html
+<div class="courtside-info-zone" id="courtsideInfoZone" style="display:none;">
+  <div class="courtside-info-card">
+    <strong>Courtside — Gratuit</strong>
+    <p>Les places Courtside sont limitées et soumises à validation par l'équipe Africa2KBall.</p>
+  </div>
+</div>
+```
+
+**main.js — modifications :**
+- Suppression du bloc `PAIEMENT COURTSIDE` et de `var PAYMENT_LINKS`
+- Nouveau bloc `COURTSIDE INFO` : révèle `courtsideInfoZone` si Courtside sélectionné
+- Correction SyntaxError ligne 174 (`"<p class=\"courtside-pay-pending\">...par l'équipe...</p>"`)
+
+**CSS V23 ajouté :**
+```css
+.courtside-info-zone { margin-top: 18px; }
+.courtside-info-card {
+  background: rgba(217,87,34,.1); border: 1px solid rgba(217,87,34,.3);
+  border-radius: 12px; padding: 18px 20px;
+}
+```
+
+---
+
+### 3. Admin V23 — Supabase, tableau Courtside, invités
+
+**admin.js — refonte complète :**
+
+```js
+const SUPABASE_URL      = 'https://ltwwjhapdxhpkwvpabva.supabase.co';
+const SUPABASE_ANON_KEY = ''; /* JAMAIS service_role — uniquement clé anon publique */
+```
+
+Nouvelles fonctions :
+- `renderCourtsideTable()` — tableau des demandes Courtside avec boutons ✓ Valider / ✗ Refuser / ✉ Notifier
+- `renderInvitesTable()` — tableau des pass invités enregistrés par le staff
+- `validateCourtside(idx)` / `refuseCourtside(idx)` — changement de statut en mock + mise à jour Supabase si clé disponible
+- `mailCourtside(email, nom, accepted)` — email confirmation ou refus via `mailto:`
+- `refreshCourtsideSupabase()` / `refreshMediaFromSupabase()` / `refreshInvitesFromSupabase()` — actifs uniquement si `SUPABASE_ANON_KEY` non vide
+- `renderSupabaseBadge()` — badge dynamique vert (configuré) ou orange (demo)
+- KPIs mis à jour : "Courtside en attente", "Courtside validés", "Invités (pass staff)"
+
+**admin.html — ajouts :**
+- `<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">` ajouté dans `<head>`
+- Badge Supabase `#supabaseBadge` (statut dynamique)
+- Tableau Courtside demandes (`#courtsideTableBody`, `#courtsideSearch`)
+- Tableau Invités pass staff (`#invitesTableBody`, `#invitesSearch`)
+- Email card "Confirmation Courtside" dans la zone emails
+- CSS boutons `.btn-ok` (vert) et `.btn-ko` (rouge) pour valider/refuser
+- Section bancaire : "Montant Courtside 10€" → "Gratuit · Soumis à validation"
+
+---
+
+### 4. staff.html + staff.js — Espace staff
+
+**staff.html — créé (page autonome, noindex) :**
+- Header fixe avec logo, titre "Espace Staff", bouton déconnexion (masqué avant login)
+- Écran login : identifiant + code (protection légère côté frontend)
+- Dashboard staff (affiché après login) :
+  - Formulaire "Enregistrer un invité" : prénom, nom, email, téléphone, type de pass (3 options radio), staff responsable (select), note, checkbox "envoyer email"
+  - Liste des passes enregistrés en session
+
+**staff.js — créé :**
+```js
+var STAFF_LOGIN = 'staff';
+var STAFF_CODE  = '93';
+```
+Fonctions :
+- `handleLogin(e)` — vérifie identifiant/code, affiche dashboard ou message d'erreur
+- `showDashboard(staffName)` — révèle le dashboard, masque l'écran login
+- `staffLogout()` — remet l'état initial, vide la session en mémoire
+- `handleGuestPass(e)` — valide le formulaire, ajoute en session, appelle Supabase insert si dispo
+- `renderPassesList()` — affiche les passes de la session courante (icône + nom + type)
+- `sendGuestConfirmationEmail(nom, email, type)` — ouvre `mailto:` avec corps pré-rempli
+- `savePassToSupabase(pass)` — insert dans `staff_guest_passes` si clé anon disponible
+
+**Sécurité :** accès frontend uniquement (protection légère). Les données sont enregistrées en mémoire session + optionnellement en Supabase. Aucune clé secrète exposée.
+
+---
+
+### 5. Affiche 2026
+
+- `assets/images/affiche-2026.png` copié depuis `Africa2kBall visuels/Africa2KBall Affiche 2026.png`
+
+---
+
+### Bilan V23
+
+| Tâche | Statut |
+|---|---|
+| CSS V23 — étoiles, courtside info | ✅ |
+| index.html — étoiles Caraïbes + Sénégal | ✅ |
+| nations.html — étoiles Caraïbes + Sénégal | ✅ |
+| champions.html — étoiles Caraïbes + Sénégal | ✅ |
+| billetterie.html — Courtside gratuit + validation | ✅ |
+| main.js — COURTSIDE INFO (remplace PAIEMENT) | ✅ |
+| admin.js — Supabase ready, Courtside, Invités | ✅ |
+| admin.html — badge Supabase, tableaux V23 | ✅ |
+| staff.html — login + formulaire pass | ✅ |
+| staff.js — logique login + submission | ✅ |
+| affiche-2026.png | ✅ |
+
+---
+
+### Supabase — Configuration requise
+
+| Variable | Valeur | Emplacement |
+|---|---|---|
+| `SUPABASE_URL` | `https://ltwwjhapdxhpkwvpabva.supabase.co` | `admin.js` + `staff.js` |
+| `SUPABASE_ANON_KEY` | `''` (vide — à renseigner) | `admin.js` + `staff.js` |
+
+**Tables Supabase prévues :**
+- `ticket_requests` — demandes Courtside (id, nom, email, message, statut, created_at)
+- `media_registrations` — inscriptions médias/presse
+- `staff_guest_passes` — passes invités (staff_member, guest_name, guest_email, pass_type, note)
+- `site_stats` — statistiques site (analytics à connecter)
+
+**RLS recommandée :** INSERT public pour les formulaires, pas de lecture publique, lectures admin protégées par Auth Supabase.
+
+**⚠️ SÉCURITÉ : Ne jamais mettre la clé `service_role` dans le frontend. Uniquement la clé `anon` publique dans `SUPABASE_ANON_KEY`.**
+
+---
+
+### Points restant avant mise en ligne
+
+| Priorité | Action |
+|---|---|
+| 🔴 Critique | Renseigner `SUPABASE_ANON_KEY` dans `admin.js` et `staff.js` |
+| 🔴 Critique | Endpoints formulaires (`FORM_ENDPOINTS` dans `main.js`) |
+| 🔴 Critique | Informations légales (RNA/SIRET, responsable publication) |
+| 🟠 Important | Logos partenaires PNG RGBA transparents |
+| 🟠 Important | Confirmer nom MVP Édition 1 (actuellement "Melvyn Da Silva") |
+| 🟡 Souhaitable | Tests mobile réel (iOS Safari + Android Chrome) |
+| 🟡 Souhaitable | Ajouter lien `staff.html` dans `admin.html` (déjà lié via bouton "+ Ajouter un pass staff") |
+
+---
+
+## V24 — Étoile au-dessus du nom, liste staff officielle, ajout groupé invités
+
+**Date :** 20 mai 2026  
+**Périmètre :** index.html, nations.html, champions.html, assets/css/style.css, admin.html, admin.js, staff.html
+
+---
+
+### 1. Repositionnement étoile champion — au-dessus du nom
+
+**Principe :** l'étoile passe de la position inline (après le nom) à une position au-dessus (bloc séparé, avant le nom).
+
+**CSS V24 — bloc ajouté en fin de style.css :**
+```css
+.champion-star--top {
+  display: block;
+  margin: 0 0 7px 0;
+  color: var(--orange);
+  text-shadow: 0 0 16px rgba(217,87,34,.4);
+}
+.champion-star--top svg { fill: var(--orange); stroke: none; display: block; }
+
+/* Index : nation-showcase-content déjà flex-column → étoile avant strong */
+.nation-showcase-content .champion-star--top { align-self: flex-start; }
+
+/* Nations : nouvelle classe pour flex-column sur le nom */
+.nation-card-name--champion { display: flex; flex-direction: column; align-items: flex-start; }
+
+/* Masque l'ancienne version inline */
+.nation-showcase-content .nation-star,
+.nation-card-name .nation-star,
+.champion-name .champion-star { display: none !important; }
+```
+
+**SVG utilisé** : `<path d="M12 2l2.9 6.1 6.7.9-4.8 4.7 1.2 6.6L12 17.1 6 20.3l1.2-6.6L2.4 9l6.7-.9L12 2z"/>` (fill currentColor)
+
+| Page | Élément | Structure |
+|---|---|---|
+| `index.html` | `.nation-showcase-content` Caraïbes | `<span class="champion-star champion-star--top">` avant `<strong>` |
+| `index.html` | `.nation-showcase-content` Sénégal | idem |
+| `nations.html` | `.nation-card-name` Caraïbes | `.nation-card-name--champion` + star avant `<span>Caraïbes</span>` |
+| `nations.html` | `.nation-card-name` Sénégal | idem |
+| `champions.html` | `.visual-card-body` Caraïbes | star entre `.champion-intro-label` et `.champion-name` |
+| `champions.html` | `.visual-card-body` Sénégal | idem |
+
+**Contrôle :** 0 étoile sur Kongo, Côte d'Ivoire, Cameroun, Mali, Maghreb, Diaspora — vérifié.
+
+---
+
+### 2. Liste officielle du staff
+
+Liste corrigée dans `staff.html` (select `#guestStaff`) et `admin.js` (`STAFF_MEMBERS`) :
+
+```
+Fodie · Samuel · Dawari · Abloss · Chris · Ornella · Junior · Dylan · Damien
+```
+
+Ancienne liste supprimée : Ali, Kader, Yasmine, Omar, Binta, Autre.
+
+`MOCK_INVITES` dans `admin.js` mis à jour avec des noms de la liste officielle.
+
+---
+
+### 3. Ajout groupé de pass invités (admin)
+
+**admin.html** — nouveau panneau "Ajout groupé de pass invités" inséré avant la zone emails :
+- `id="bulkGuestWrap"` — formulaire généré dynamiquement par `admin.js`
+
+**admin.js** — fonctions ajoutées :
+- `renderBulkForm()` — génère le formulaire avec select staff (liste officielle), select type de pass, bouton "＋ Ajouter une ligne"
+- `addBulkRow()` — ajoute une ligne invité (Nom, Prénom, Email, Téléphone, Message)
+- `removeBulkRow(btn)` — supprime une ligne
+- `submitBulkGuests()` — validation, insert mock local, insert Supabase multiple si clé dispo
+
+**Logique Supabase :**
+```js
+supabase.from('staff_guest_passes').insert(guestsToInsert)
+// guestsToInsert = tableau d'objets avec :
+// { guest_nom, guest_prenom, guest_email, guest_telephone, invited_by, pass_type, message, status: 'en_attente' }
+```
+
+**Comportement si Supabase non configuré :** message informatif clair, données ajoutées au mock local uniquement, aucun faux message de succès Supabase.
+
+**Validation :** Nom, Prénom, Email obligatoires par ligne — lignes invalides surlignées en rouge.
+
+---
+
+### Bilan V24
+
+| Tâche | Statut |
+|---|---|
+| CSS V24 — champion-star--top | ✅ |
+| index.html — étoile au-dessus Caraïbes & Sénégal | ✅ |
+| nations.html — étoile au-dessus Caraïbes & Sénégal | ✅ |
+| champions.html — étoile au-dessus Caraïbes & Sénégal | ✅ |
+| 0 étoile sur les 6 autres nations | ✅ |
+| staff.html — liste officielle (9 membres) | ✅ |
+| admin.js — STAFF_MEMBERS liste officielle | ✅ |
+| admin.js — MOCK_INVITES noms officiels | ✅ |
+| admin.html — section "Ajout groupé" | ✅ |
+| admin.js — renderBulkForm / addBulkRow / submitBulkGuests | ✅ |
+| admin.js — insert multiple Supabase préparé | ✅ |
+
+---
+
+### Points restants — table `staff_guest_passes`
+
+La table Supabase `staff_guest_passes` doit être créée avec les colonnes suivantes avant activation :
+
+| Colonne | Type | Notes |
+|---|---|---|
+| `id` | uuid / bigint | Primary key, auto-generated |
+| `guest_nom` | text | Obligatoire |
+| `guest_prenom` | text | Obligatoire |
+| `guest_email` | text | Obligatoire |
+| `guest_telephone` | text | Nullable |
+| `invited_by` | text | Membre staff responsable |
+| `pass_type` | text | Standard / Courtside / VIP |
+| `message` | text | Nullable |
+| `status` | text | Default `en_attente` |
+| `created_at` | timestamptz | Default `now()` |
+
+**RLS recommandée :** INSERT autorisé pour les rôles `anon` et `authenticated`, SELECT/UPDATE restreints à `authenticated` uniquement (Admin Supabase Auth).
