@@ -1728,3 +1728,122 @@ La correction est de supprimer `.select()` : l'insert utilise alors `Prefer: ret
 ### Verdict au 26 mai 2026
 
 **GO CONDITIONNEL** — Erreur 400 résolue. À confirmer par test réel après push + déploiement Vercel.
+
+---
+
+## V29 — Correction inscriptions média / bénévole Supabase (26 mai 2026)
+
+### Cause du bug
+
+`inscriptions.html` chargeait `main.js?v=menu-final-jsfix` — ancien cache Vercel/navigateur pointant vers une version antérieure à la correction V28 (qui contenait encore `.insert().select()`). Résultat : appel réseau avec `?select=*` → RLS bloque SELECT pour anon → **400**.
+
+La correction V28 de `submitInscriptionsSupabase()` (suppression `.select()`) était déjà dans le code source local mais pas visible depuis Vercel à cause du cache.
+
+### Modifications effectuées
+
+| Fichier | Modification | Statut |
+|---|---|---|
+| `inscriptions.html` | Query string : `?v=menu-final-jsfix` → `?v=inscriptions-supabase-v29` | ✅ |
+| `inscriptions.html` | CDN Supabase vérifié avant main.js | ✅ |
+| `main.js` | Handler `formInscriptions` réécrit en `async function (e)` + `await/try/catch/finally` | ✅ |
+| `main.js` | `inscriptionTypeMap` : normalisation `media`/`benevole` sans accent | ✅ |
+| `main.js` | `type_inscription` normalisé via `inscriptionTypeMap[rawType]` | ✅ |
+| `main.js` | `message` → `null` si vide (jamais chaîne vide) | ✅ |
+| `main.js` | `disponibilites` → `null` si vide | ✅ |
+| `main.js` | Messages succès différenciés média / bénévole | ✅ |
+| `main.js` | Fichier reconstruit après troncature (formContact IIFE restaurée) | ✅ |
+| `billetterie.html` | Non modifié — reste sur `?v=billetterie-supabase-v28` | ✅ |
+
+### Payload `media_registrations` envoyé (V29)
+
+```js
+{
+  nom:              string,        // non vide (validé)
+  prenom:           string,        // non vide (validé)
+  email:            string,        // email valide (validé)
+  telephone:        string,        // non vide (validé)
+  type_inscription: 'media'        // normalisé via inscriptionTypeMap
+                  | 'benevole',
+  organisation:     string | null,
+  social_links:     string | null,
+  disponibilites:   string | null, // null si vide
+  message:          string | null, // null si vide — jamais chaîne vide
+  rgpd:             true,
+  status:           'en_attente'
+}
+```
+
+### SQL — colonnes à ajouter si manquantes dans `media_registrations`
+
+À exécuter dans Supabase → SQL Editor si les colonnes n'existent pas encore :
+
+```sql
+-- Colonnes supplémentaires pour media_registrations
+alter table public.media_registrations
+  add column if not exists telephone       text,
+  add column if not exists organisation    text,
+  add column if not exists social_links    text,
+  add column if not exists type_inscription text,
+  add column if not exists disponibilites  text,
+  add column if not exists message         text,
+  add column if not exists rgpd            boolean not null default false,
+  add column if not exists status          text    not null default 'en_attente',
+  add column if not exists created_at      timestamptz not null default now();
+
+-- Activer RLS
+alter table public.media_registrations enable row level security;
+
+-- Policy INSERT pour anon (formulaires publics)
+drop policy if exists "Anon can insert media registrations" on public.media_registrations;
+create policy "Anon can insert media registrations"
+  on public.media_registrations
+  for insert
+  to anon
+  with check (
+    rgpd = true
+    and status = 'en_attente'
+  );
+
+-- SELECT reste restreint à authenticated (admin)
+-- Ne pas créer de policy SELECT pour anon
+```
+
+### Messages utilisateur V29
+
+| Cas | Message |
+|---|---|
+| Insert OK (média) | "Votre demande d'accréditation média a bien été enregistrée. L'équipe Africa2KBall reviendra vers vous rapidement." |
+| Insert OK (bénévole) | "Votre inscription bénévole a bien été enregistrée. L'équipe Africa2KBall reviendra vers vous rapidement." |
+| Insert KO | "Une erreur est survenue lors de l'enregistrement de votre inscription. Merci de réessayer ou de contacter l'équipe Africa2KBall." |
+| Faux succès "préparée" | **Impossible** — aucun chemin vers submitForm() pour inscriptions |
+
+### Checklist test obligatoire après déploiement
+
+```
+[ ] Push + Vercel redeploy
+[ ] Ouvrir https://africa2kball.vercel.app/inscriptions.html
+[ ] Ouvrir console navigateur (F12)
+[ ] Soumettre inscription Média (tous champs requis remplis)
+[ ] Vérifier console : "[Africa2KBall] Payload media_registrations: {...}"
+[ ] Vérifier qu'aucun appel réseau ne contient ?select=*
+[ ] Vérifier message succès : "accréditation média a bien été enregistrée"
+[ ] Vérifier ligne dans Supabase → media_registrations
+[ ] Vérifier type_inscription = 'media', status = 'en_attente', rgpd = true
+[ ] Refaire avec Bénévole
+[ ] Vérifier type_inscription = 'benevole'
+[ ] Vérifier message succès : "inscription bénévole a bien été enregistrée"
+[ ] Vérifier billetterie.html toujours fonctionnel (non régressé)
+[ ] Vérifier formulaire contact.html toujours fonctionnel
+```
+
+### Tableau récapitulatif — état de tous les formulaires
+
+| Formulaire | Table Supabase | Sans .select() | Cache-bust | Statut |
+|---|---|---|---|---|
+| `billetterie.html` | `ticket_requests` | ✅ V28 | `?v=billetterie-supabase-v28` | ✅ GO |
+| `inscriptions.html` | `media_registrations` | ✅ V28/V29 | `?v=inscriptions-supabase-v29` | ✅ GO |
+| `contact.html` | submitForm (endpoint vide) | — | `?v=menu-final-jsfix` | ⚠️ Endpoint non branché |
+
+### Verdict au 26 mai 2026
+
+**GO CONDITIONNEL** — Inscriptions corrigées. Billetterie non régressée. À valider par test réel après push + déploiement Vercel.

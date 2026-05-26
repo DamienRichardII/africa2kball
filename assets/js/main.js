@@ -560,19 +560,29 @@ function submitForm(endpoint, formData, feedbackId, msgPending, msgSuccess, onSu
 })();
 
 /* ============================================================
-   FORMULAIRE INSCRIPTIONS — V26
+   FORMULAIRE INSCRIPTIONS — V29
    Insert direct dans Supabase — table media_registrations
    Gère : média ET bénévole (champ type_inscription)
+   Handler async — pas de .select(), pas de submitForm()
    ============================================================ */
 (function () {
   var form = document.getElementById('formInscriptions');
   if (!form) return;
   var feedbackId = 'feedbackInscriptions';
 
-  form.addEventListener('submit', function (e) {
+  /* Mapping type_inscription — valeurs exactes Supabase (sans accent) */
+  var inscriptionTypeMap = {
+    media:     'media',
+    medias:    'media',
+    benevole:  'benevole',
+    bénévole:  'benevole'
+  };
+
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
     clearFeedback(feedbackId);
 
+    /* --- Validation --- */
     var nom    = document.getElementById('i-nom');
     var prenom = document.getElementById('i-prenom');
     var email  = document.getElementById('i-email');
@@ -605,11 +615,17 @@ function submitForm(endpoint, formData, feedbackId, msgPending, msgSuccess, onSu
 
     if (!valid) return;
 
-    /* Collecte des données */
+    /* --- Collecte des données — V29 --- */
+
+    /* type_inscription : normalisé sans accent, lowercase */
     var typeInscInput = document.querySelector('#typeSelectorInscription input[type="radio"]:checked');
-    var typeInscription = typeInscInput ? typeInscInput.value : 'media'; /* 'media' ou 'benevole' */
-    var org     = (document.getElementById('i-org')    || {}).value || '';
-    var social  = (document.getElementById('i-social') || {}).value || '';
+    var rawType = typeInscInput ? typeInscInput.value.toLowerCase().trim() : 'media';
+    var typeInscription = inscriptionTypeMap[rawType] || 'media';
+
+    var org    = (document.getElementById('i-org')    || {}).value || '';
+    var social = (document.getElementById('i-social') || {}).value || '';
+    var dispoVal = dispo.value.trim();
+    var msgVal   = msg.value.trim();
 
     var payload = {
       nom:              nom.value.trim(),
@@ -617,24 +633,31 @@ function submitForm(endpoint, formData, feedbackId, msgPending, msgSuccess, onSu
       email:            email.value.trim(),
       telephone:        tel.value.trim(),
       type_inscription: typeInscription,
-      organisation:     org.trim()   || null,
+      organisation:     org.trim()    || null,
       social_links:     social.trim() || null,
-      disponibilites:   dispo.value.trim() || null,
-      message:          msg.value.trim(),
+      disponibilites:   dispoVal      || null,
+      message:          msgVal        || null,  /* null si vide — jamais chaîne vide */
       rgpd:             true,
       status:           'en_attente'
     };
 
-    /* Désactiver bouton pendant envoi */
+    /* --- Anti-double-submit --- */
     var submitBtn = form.querySelector('.btn-submit');
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Envoi en cours…'; }
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.dataset.originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = 'ENVOI EN COURS...';
+    }
 
-    /* Insert Supabase */
-    submitInscriptionsSupabase(payload).then(function () {
+    try {
+      /* --- Insert Supabase — sans .select() --- */
+      await submitInscriptionsSupabase(payload);
+
       var msgOk = typeInscription === 'benevole'
-        ? 'Votre inscription bénévole a bien été enregistrée. L\'équipe Africa2KBall reviendra vers vous après étude de votre demande.'
-        : 'Votre demande d\'accréditation média a bien été enregistrée. L\'équipe Africa2KBall reviendra vers vous après étude de votre dossier.';
+        ? 'Votre inscription bénévole a bien été enregistrée. L\'équipe Africa2KBall reviendra vers vous rapidement.'
+        : 'Votre demande d\'accréditation média a bien été enregistrée. L\'équipe Africa2KBall reviendra vers vous rapidement.';
       showFeedback(feedbackId, 'success', msgOk);
+
       form.reset();
       /* Réinitialiser le sélecteur de type */
       var types = document.querySelectorAll('#typeSelectorInscription .type-option');
@@ -644,16 +667,18 @@ function submitForm(endpoint, formData, feedbackId, msgPending, msgSuccess, onSu
         var radio = types[0].querySelector('input[type="radio"]');
         if (radio) radio.checked = true;
       }
-    }).catch(function (err) {
-      console.error('[Africa2KBall] Erreur Supabase inscriptions:', err);
+
+    } catch (error) {
+      console.error('[Africa2KBall] Erreur insert inscriptions:', error);
       showFeedback(feedbackId, 'error',
         'Une erreur est survenue lors de l\'enregistrement de votre inscription. Merci de réessayer ou de contacter l\'équipe Africa2KBall.');
-    }).finally(function () {
+    } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Envoyer mon inscription';
+        submitBtn.innerHTML = submitBtn.dataset.originalText ||
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Envoyer mon inscription';
       }
-    });
+    }
   });
 
   clearFieldErrors(['i-nom','i-prenom','i-email','i-tel','i-dispo','i-message','i-rgpd']);
@@ -690,7 +715,6 @@ function submitForm(endpoint, formData, feedbackId, msgPending, msgSuccess, onSu
 
     if (!sujet  || !sujet.value)               { setFieldError('grp-c-sujet',   'err-c-sujet',   true); valid = false; }
     else setFieldError('grp-c-sujet',   'err-c-sujet',   false);
-
     if (!message || !message.value.trim())     { setFieldError('grp-c-message', 'err-c-message', true); valid = false; }
     else setFieldError('grp-c-message', 'err-c-message', false);
 
