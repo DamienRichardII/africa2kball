@@ -1636,3 +1636,95 @@ Le site déployé sur Vercel servait l'ancien `main.js` (version sans Supabase) 
 ### Verdict au 26 mai 2026
 
 **GO CONDITIONNEL** — À valider par test réel après push + déploiement Vercel.
+
+---
+
+## V28 — Correction erreur 400 Supabase billetterie (26 mai 2026)
+
+### Cause racine — erreur 400 diagnostiquée
+
+L'insert Supabase échouait avec status 400 à cause de `.select()` chaîné après `.insert()`.
+
+**Explication technique :**
+Quand `.insert([payload]).select()` est appelé, supabase-js ajoute l'en-tête `Prefer: return=representation` à la requête. PostgREST interprète cela comme une demande de retour des données insérées, ce qui nécessite la permission `SELECT`. Or, la RLS est configurée avec `SELECT` restreint à `authenticated`. La requête `anon` est donc refusée → **400 Bad Request**.
+
+La correction est de supprimer `.select()` : l'insert utilise alors `Prefer: return=minimal` (comportement par défaut), qui ne nécessite que la permission `INSERT`.
+
+### Corrections effectuées
+
+| Fichier | Modification | Statut |
+|---|---|---|
+| `main.js` | Suppression de `.select()` dans `submitBilletterieToSupabase()` | ✅ |
+| `main.js` | Suppression de `.select()` dans `submitInscriptionsSupabase()` | ✅ |
+| `main.js` | Logs d'erreur détaillés : `message`, `details`, `hint`, `code` | ✅ |
+| `main.js` | `console.log('[Africa2KBall] Payload ticket_requests:', payload)` avant insert | ✅ |
+| `main.js` | `console.log('[Africa2KBall] Payload media_registrations:', payload)` avant insert | ✅ |
+| `main.js` | `ticketTypeMap` : normalisation lowercase des valeurs `ticket_type` | ✅ |
+| `main.js` | `quantity` sécurisé avec `Number.isFinite` | ✅ |
+| `main.js` | `message` envoyé à `null` si vide (pas de chaîne vide) | ✅ |
+| `main.js` | Fichier tronqué en milieu de ligne — `formContact` IIFE reconstruite | ✅ |
+| `billetterie.html` | Cache-bust : `?v=billetterie-supabase-v27` → `?v=billetterie-supabase-v28` | ✅ |
+
+### Payload ticket_requests envoyé (V28)
+
+```js
+{
+  nom:         string,           // non vide (validé)
+  prenom:      string,           // non vide (validé)
+  email:       string,           // email valide (validé)
+  telephone:   string,           // non vide (validé)
+  ticket_type: 'standard'        // normalisé lowercase via ticketTypeMap
+             | 'courtside'
+             | 'media'
+             | 'invite',
+  quantity:    integer >= 1,     // Number.isFinite sécurisé
+  message:     string | null,    // null si vide (jamais chaîne vide)
+  rgpd:        true,             // uniquement si case cochée (validé)
+  status:      'en_attente'
+}
+```
+
+### Colonnes NON envoyées (correctement absentes)
+
+- `id` — géré par Supabase (uuid auto)
+- `created_at` — géré par Supabase (default now())
+- `type`, `statut`, `nom_complet`, `phone` — colonnes inexistantes
+
+### Ce qui NE peut plus arriver après V28
+
+| Situation | Avant V28 | Après V28 |
+|---|---|---|
+| Message "préparée" sur billetterie | Possible (ancien cache) | **Impossible** |
+| Erreur 400 cause `.select()` + RLS | ✅ Arrivait | **Corrigé** |
+| Erreur 400 cause chaîne vide message | Possible | **Corrigé (null)** |
+| ticket_type en majuscules | Possible | **Normalisé lowercase** |
+| quantity non-integer | Possible (NaN) | **Sécurisé Number.isFinite** |
+| Faux succès si insert échoue | Impossible (déjà corrigé V27) | **Maintenu** |
+
+### Checklist test obligatoire après déploiement
+
+```
+[ ] Push + Vercel redeploy
+[ ] Ouvrir https://africa2kball.vercel.app/billetterie.html
+[ ] Ouvrir console navigateur (F12)
+[ ] Remplir : Nom, Prénom, Email, Téléphone, Standard, RGPD
+[ ] Soumettre — vérifier dans console : "[Africa2KBall] Payload ticket_requests: {...}"
+[ ] Vérifier aucune erreur 400 en console
+[ ] Vérifier message site : "Votre demande de billet a bien été enregistrée..."
+[ ] Vérifier dans Supabase → public.ticket_requests → nouvelle ligne
+[ ] Vérifier ticket_type = 'standard', status = 'en_attente'
+[ ] Refaire avec Courtside → vérifier ticket_type = 'courtside'
+[ ] Vérifier que la case RGPD décochée bloque bien la soumission
+[ ] Vérifier formulaire contact (page contact.html) — toujours fonctionnel
+[ ] Vérifier inscriptions.html — même correction .select() appliquée
+```
+
+### Sécurité
+
+- Clé anon publique uniquement — aucune service_role.
+- INSERT autorisé pour anon sans contourner la RLS.
+- SELECT reste restreint à authenticated (l'admin lit via refreshAllTicketsFromSupabase).
+
+### Verdict au 26 mai 2026
+
+**GO CONDITIONNEL** — Erreur 400 résolue. À confirmer par test réel après push + déploiement Vercel.

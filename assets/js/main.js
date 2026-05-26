@@ -45,27 +45,50 @@ async function submitBilletterieToSupabase(payload) {
   if (!sb) {
     throw new Error('Supabase non configuré ou CDN non chargé.');
   }
+
+  /* Log diagnostic payload — V28 */
+  console.log('[Africa2KBall] Payload ticket_requests:', payload);
+
+  /* SANS .select() — RLS anon autorise INSERT mais pas SELECT
+     .select() ajouterait Prefer: return=representation → 400 refus */
   var result = await sb
     .from('ticket_requests')
-    .insert([payload])
-    .select();
+    .insert([payload]);
+
   if (result.error) {
-    console.error('[Africa2KBall] Insert ticket_requests error:', result.error);
+    /* Log détaillé pour diagnostic Supabase */
+    console.error('[Africa2KBall] Insert ticket_requests error full:', {
+      message: result.error.message,
+      details: result.error.details,
+      hint:    result.error.hint,
+      code:    result.error.code,
+      full:    result.error
+    });
     throw result.error;
   }
-  return result.data;
+  return true; /* insert réussi — pas de data retournée (return=minimal) */
 }
 
 async function submitInscriptionsSupabase(payload) {
   var sb = getA2KBSupabase();
   if (!sb) throw new Error('Supabase non disponible.');
   /* Table media_registrations — accepte média ET bénévole via type_inscription */
+  /* SANS .select() — RLS anon autorise INSERT mais pas SELECT */
+  console.log('[Africa2KBall] Payload media_registrations:', payload);
   var result = await sb
     .from('media_registrations')
-    .insert([payload])
-    .select();
-  if (result.error) throw result.error;
-  return result.data;
+    .insert([payload]);
+  if (result.error) {
+    console.error('[Africa2KBall] Insert media_registrations error full:', {
+      message: result.error.message,
+      details: result.error.details,
+      hint:    result.error.hint,
+      code:    result.error.code,
+      full:    result.error
+    });
+    throw result.error;
+  }
+  return true;
 }
 
 
@@ -470,12 +493,22 @@ function submitForm(endpoint, formData, feedbackId, msgPending, msgSuccess, onSu
 
     if (!valid) return;
 
-    /* --- Collecte des données --- */
+    /* --- Collecte des données — V28 --- */
+
+    /* ticket_type : valeurs exactes Supabase (lowercase) */
+    var ticketTypeMap = { standard: 'standard', courtside: 'courtside', media: 'media', invite: 'invite' };
     var ticketTypeInput = form.querySelector('input[name="ticket_type"]:checked');
-    var ticketType = ticketTypeInput ? ticketTypeInput.value : 'standard';
+    var rawType = ticketTypeInput ? ticketTypeInput.value.toLowerCase().trim() : 'standard';
+    var ticketType = ticketTypeMap[rawType] || 'standard';
+
+    /* quantity : integer ≥ 1 strictement */
     var ticketCount = document.getElementById('ticketCount');
-    var quantity = ticketCount ? parseInt(ticketCount.value, 10) || 1 : 1;
+    var rawQty = ticketCount ? parseInt(ticketCount.value, 10) : 1;
+    var quantity = Number.isFinite(rawQty) && rawQty >= 1 ? rawQty : 1;
+
+    /* message : null si vide (pas de chaîne vide) */
     var messageEl = document.getElementById('b-message');
+    var messageVal = messageEl ? messageEl.value.trim() : '';
 
     var payload = {
       nom:         nom.value.trim(),
@@ -484,7 +517,7 @@ function submitForm(endpoint, formData, feedbackId, msgPending, msgSuccess, onSu
       telephone:   tel.value.trim(),
       ticket_type: ticketType,
       quantity:    quantity,
-      message:     messageEl ? messageEl.value.trim() : '',
+      message:     messageVal !== '' ? messageVal : null,
       rgpd:        true,
       status:      'en_attente'
     };
@@ -646,7 +679,6 @@ function submitForm(endpoint, formData, feedbackId, msgPending, msgSuccess, onSu
     var sujet   = document.getElementById('c-sujet');
     var message = document.getElementById('c-message');
     var valid   = true;
-
     if (!nom    || !nom.value.trim())          { setFieldError('grp-c-nom',     'err-c-nom',     true); valid = false; }
     else setFieldError('grp-c-nom',     'err-c-nom',     false);
 
