@@ -808,7 +808,7 @@ Ce rendu est **intentionnel et temporaire**. Dès réception des fichiers transp
 - Case RGPD obligatoire (`i-rgpd`)
 
 **Contact (contact.html)**
-- Email `contact@africa2kball.com` cliquable (`href="mailto:"`)
+- Email `af2kball@gmail.com` cliquable (`href="mailto:"`)
 - Threads + YouTube ajoutés dans la sidebar
 - "Réponse sous 24 à 48h" affiché
 - CTA "Pour une demande de billet → billetterie"
@@ -1364,3 +1364,275 @@ La table Supabase `staff_guest_passes` doit être créée avec les colonnes suiv
 | `created_at` | timestamptz | Default `now()` |
 
 **RLS recommandée :** INSERT autorisé pour les rôles `anon` et `authenticated`, SELECT/UPDATE restreints à `authenticated` uniquement (Admin Supabase Auth).
+
+---
+
+## Plan GO Live billetterie — V25 (22 mai 2026)
+
+### Livrable produit
+
+- PDF de validation créé : `PLAN_GO_LIVE_AFRICA2KBALL_BILLETTERIE.pdf`
+- Audit technique complet du site effectué avant génération
+
+### Checklists incluses dans le PDF
+
+- Checklist Supabase (tables, RLS, clés)
+- Checklist billetterie (tunnel formulaire → Supabase)
+- Checklist admin (lecture données, validation Courtside)
+- Checklist staff (login, pass invités, bulk)
+- Checklist emails (mailto, envoi automatique futur)
+- Checklist juridique (mentions légales, RGPD)
+- Checklist responsive / UX mobile
+- Checklist déploiement GitHub / Vercel
+
+### Critères GO / NO GO définis
+
+**GO si :** demandes billets sauvegardées, admin opérationnel, Courtside manuel, emails préparables, légal minimal présent, test mobile OK.
+
+**NO GO si :** formulaire ne sauvegarde rien, admin aveugle, données sensibles publiques, statuts non suivables, mobile bloquant.
+
+### Points bloquants identifiés (audit 22 mai 2026)
+
+| Point bloquant | Gravité | Action |
+|---|---|---|
+| `FORM_ENDPOINTS.billetterie = ''` dans main.js | 🔴 CRITIQUE | Brancher sur Supabase SDK JS ou endpoint POST |
+| Tables Supabase non créées / non testées | 🔴 CRITIQUE | Créer + activer RLS dans le dashboard Supabase |
+| Mentions légales incomplètes (nom structure, RNA/SIRET, responsable) | 🔴 CRITIQUE | Compléter avant mise en ligne officielle |
+| Données mockées dans admin.js | 🟡 MODÉRÉ | Marquer clairement "EXEMPLE" ou retirer |
+| Logs de diagnostic dans main.js (console.log) | 🟡 MODÉRÉ | Retirer avant déploiement production |
+| noindex absent sur admin.html et staff.html | 🟡 MODÉRÉ | Ajouter balise meta robots |
+
+### Verdict au 22 mai 2026
+
+**NO GO** — J-16 avant l'événement. Estimation correction des blocages : 2 à 4h de travail technique.
+
+---
+
+## Correction critique billetterie Supabase — Passage NO GO vers GO conditionnel — V25
+
+### Fichiers modifiés
+
+| Fichier | Modification |
+|---|---|
+| `billetterie.html` | Ajout CDN `@supabase/supabase-js@2` avant main.js |
+| `assets/js/main.js` | Ajout config Supabase + `getSupabaseClient()` + `submitBilletterieSupabase()` + nouveau handler formulaire |
+| `assets/js/admin.js` | Correction bug `.eq('type')` → `.eq('ticket_type')` + ajout `refreshAllTicketsFromSupabase()` |
+
+### Ce qui a changé dans main.js
+
+- `FORM_ENDPOINTS.billetterie = ''` ne bloque plus l'enregistrement
+- Config Supabase ajoutée (`SUPABASE_URL` + `SUPABASE_ANON_KEY` anon publique uniquement)
+- Fonction `getSupabaseClient()` : initialise le client une seule fois
+- Fonction `submitBilletterieSupabase(payload)` : insert async dans `ticket_requests`
+- Handler formulaire billetterie entièrement revu :
+  - Payload complet : nom, prénom, email, téléphone, ticket_type, quantity, message, rgpd, status
+  - Bouton désactivé pendant l'envoi (anti-double-soumission)
+  - Message succès différencié Courtside / Standard
+  - Message d'erreur réel si Supabase échoue (plus de faux succès)
+  - Reset UI complet après succès
+
+### Ce qui a changé dans admin.js
+
+- Bug corrigé : `refreshCourtsideListFromSupabase()` utilisait `.eq('type', 'courtside')` — corrigé en `.eq('ticket_type', 'courtside')`
+- Ajout `refreshAllTicketsFromSupabase()` : lit toutes les `ticket_requests`, sépare par `ticket_type`, met à jour Courtside + Médias + KPI
+- `DOMContentLoaded` : appel remplacé par `refreshAllTicketsFromSupabase()` (couvre standard + courtside + média + invite en un seul appel)
+- Ajout `renderTicketsSummary()` pour afficher le comptage Standard + Invités
+
+### Sécurité
+
+- Clé anon publique uniquement (`SUPABASE_ANON_KEY`)
+- Aucune `service_role` exposée côté frontend
+- Contrainte maintenue depuis V23
+
+### Points restant avant GO
+
+GO uniquement après test réel :
+`billetterie.html → Supabase ticket_requests → admin.html`
+
+| Point restant | Priorité |
+|---|---|
+| Créer la table `ticket_requests` dans Supabase dashboard | 🔴 CRITIQUE |
+| Activer RLS : INSERT anon autorisé, SELECT/UPDATE restreint | 🔴 CRITIQUE |
+| Tester insert Standard en production | 🔴 CRITIQUE |
+| Tester insert Courtside en production | 🔴 CRITIQUE |
+| Vérifier affichage dans admin.html après insert | 🔴 CRITIQUE |
+| Compléter mentions-legales.html (nom structure, RNA/SIRET) | 🔴 CRITIQUE |
+| Retirer les logs de diagnostic de main.js (console.log) | 🟡 MODÉRÉ |
+| Ajouter `noindex` sur admin.html et staff.html | 🟡 MODÉRÉ |
+
+### Verdict au 22 mai 2026
+
+**GO CONDITIONNEL** — Billetterie connectée à Supabase. Validation finale requise par test réel en production.
+
+---
+
+## Pré-test production — email officiel et Supabase live admin — V26 (24 mai 2026)
+
+### Résumé des modifications
+
+| Action | Fichiers | Statut |
+|---|---|---|
+| Remplacement email `contact@africa2kball.com` → `af2kball@gmail.com` | index, nations, histoire, champions, billetterie, inscriptions, contact, mentions-légales, politique-confidentialité, cgv, admin.html, main.js, admin.js, staff.js | ✅ FAIT |
+| Liens `mailto:` mis à jour | Tous les fichiers ci-dessus | ✅ FAIT |
+| admin.js — bug colonne `.update({ statut: … })` → `.update({ status: … })` | admin.js | ✅ CORRIGÉ |
+| admin.js — gestion erreur RLS | admin.js | ✅ AJOUTÉ |
+| admin.js — badge Supabase 3 états (connecté / RLS bloqué / non configuré) | admin.js | ✅ AMÉLIORÉ |
+| CDN Supabase ajouté à inscriptions.html | inscriptions.html | ✅ FAIT |
+| Formulaire inscriptions branché sur Supabase (`media_registrations`) | main.js | ✅ FAIT |
+| `submitInscriptionsSupabase()` ajouté (média + bénévole) | main.js | ✅ FAIT |
+| Messages succès/erreur différenciés (média / bénévole) | main.js | ✅ FAIT |
+| Anti-double-submit inscriptions | main.js | ✅ AJOUTÉ |
+| Console.log de diagnostic retirés (menu burger) | main.js | ✅ NETTOYÉ |
+
+### Email officiel
+
+- **Ancien :** `contact@africa2kball.com`
+- **Nouveau :** `af2kball@gmail.com`
+- Zéro occurrence résiduelle de l'ancien email dans le code HTML/JS.
+- Tous les liens `mailto:` sont cliquables et pointent vers le bon email.
+- Les templates email (admin, confirmation Courtside, confirmation média, mail libre) ont été mis à jour.
+
+### admin.js — Supabase live
+
+- Clé anon publique déjà présente depuis V23 — **inchangée** (sécurité maintenue).
+- SUPABASE_URL correct : `https://ltwwjhapdxhpkwvpabva.supabase.co`.
+- `refreshAllTicketsFromSupabase()` actif au chargement de la page admin.
+- `refreshInvitesFromSupabase()` actif au chargement.
+- **Bug corrigé :** `.update({ statut: newStatut })` → `.update({ status: newStatut })` dans `refreshCourtsideSupabase()`.
+
+### Point de vigilance RLS — lecture admin
+
+La politique RLS actuelle est :
+- **INSERT** : autorisé pour `anon` → les formulaires publics (billetterie, inscriptions) peuvent insérer.
+- **SELECT / UPDATE** : restreint à `authenticated` → l'admin (`anon`) ne peut **pas** lire les données.
+
+Comportement implémenté dans admin.js :
+- Si Supabase répond normalement → badge vert "Supabase configuré — données en direct".
+- Si Supabase retourne une erreur de permission (code `PGRST116`, `42501`, ou message "permission denied") → badge rouge "🔒 Lecture bloquée par RLS" avec explication claire.
+- Les données mock s'affichent en attendant.
+
+**Pour activer la lecture admin**, deux options :
+1. **Option temporaire test** : dans Supabase → Policies → `ticket_requests` → ajouter une policy `SELECT` pour `anon` (à retirer après test).
+2. **Option prod** : implémenter Supabase Auth dans admin.html (login email/password) → le client devient `authenticated` → lecture autorisée.
+
+### inscriptions.html — Supabase branché
+
+- CDN `@supabase/supabase-js@2` ajouté avant `main.js`.
+- Formulaire `formInscriptions` branché sur `submitInscriptionsSupabase()`.
+- Insert dans table `media_registrations` (gère média ET bénévole).
+- Payload :
+
+```js
+{
+  nom, prenom, email, telephone,
+  type_inscription: 'media' | 'benevole',
+  organisation, social_links, disponibilites,
+  message, rgpd: true, status: 'en_attente'
+}
+```
+
+⚠️ **À faire dans Supabase Dashboard** : vérifier que la table `media_registrations` accepte les colonnes `type_inscription`, `disponibilites`, `social_links`. Si ces colonnes sont absentes, les ajouter ou adapter le payload.
+
+### Checklist test production
+
+```
+[ ] Envoyer une demande Standard depuis billetterie.html
+[ ] Vérifier la ligne dans Supabase → ticket_requests
+[ ] Envoyer une demande Courtside depuis billetterie.html
+[ ] Vérifier ticket_type = courtside, status = en_attente
+[ ] Envoyer une inscription Média depuis inscriptions.html
+[ ] Vérifier la ligne dans Supabase → media_registrations
+[ ] Envoyer une inscription Bénévole depuis inscriptions.html
+[ ] Vérifier type_inscription = benevole dans media_registrations
+[ ] Ouvrir admin.html
+[ ] Vérifier badge Supabase (vert si SELECT autorisé, rouge RLS sinon)
+[ ] Vérifier tableaux Courtside + Médias si données live
+[ ] Tester action Valider/Refuser Courtside → vérifier UPDATE dans Supabase
+[ ] Vérifier email af2kball@gmail.com partout (footer, contact, templates admin)
+```
+
+### Points restants avant GO définitif
+
+| Point | Priorité |
+|---|---|
+| Créer/vérifier table `ticket_requests` dans Supabase (colonnes exactes) | 🔴 CRITIQUE |
+| Créer/vérifier table `media_registrations` (+ colonnes type_inscription, disponibilites, social_links) | 🔴 CRITIQUE |
+| Configurer RLS pour lecture admin (Supabase Auth ou policy temporaire) | 🔴 CRITIQUE |
+| Test réel end-to-end en production | 🔴 CRITIQUE |
+| Compléter mentions-legales.html (nom structure, RNA/SIRET, responsable) | 🔴 CRITIQUE |
+| Ajouter `noindex` sur admin.html et staff.html | 🟡 MODÉRÉ |
+| Implémenter Supabase Auth dans admin.html (login sécurisé) | 🟡 MODÉRÉ (avant lancement public) |
+
+### Verdict au 24 mai 2026
+
+**GO CONDITIONNEL** — Email officiel mis à jour sur tout le site. Billetterie et inscriptions connectées à Supabase. Admin prêt pour données live dès que RLS configuré. Test réel en production requis avant GO définitif.
+
+---
+
+## V27 — Correction critique billetterie Supabase (26 mai 2026)
+
+### Cause racine du NO GO
+
+Le site déployé sur Vercel servait l'ancien `main.js` (version sans Supabase) car le query string `?v=menu-final-jsfix` n'avait pas changé → cache navigateur/Vercel non invalidé. Le formulaire tombait dans `submitForm(FORM_ENDPOINTS.billetterie, '')` → faux message "préparée". Aucune ligne dans Supabase.
+
+### Modifications effectuées
+
+| Fichier | Modification | Statut |
+|---|---|---|
+| `billetterie.html` | Query string main.js : `?v=menu-final-jsfix` → `?v=billetterie-supabase-v27` | ✅ |
+| `billetterie.html` | CDN Supabase vérifié présent avant main.js | ✅ |
+| `main.js` | Nouvelle fonction `getA2KBSupabase()` (robuste : vérifie `window.supabase` + clé) | ✅ |
+| `main.js` | `getSupabaseClient()` gardé comme alias pour inscriptions | ✅ |
+| `main.js` | Nouvelle fonction `submitBilletterieToSupabase(payload)` (insert `ticket_requests`) | ✅ |
+| `main.js` | Handler `formBilletterie` réécrit en `async function (e)` + `await/try/catch/finally` | ✅ |
+| `main.js` | `formBilletterie` ne dépend plus de `submitForm()` ni de `FORM_ENDPOINTS.billetterie` | ✅ |
+| `main.js` | Message "préparée" supprimé du chemin billetterie — impossible d'apparaître | ✅ |
+
+### Payload insert `ticket_requests`
+
+```js
+{
+  nom:         nom.value.trim(),
+  prenom:      prenom.value.trim(),
+  email:       email.value.trim(),
+  telephone:   tel.value.trim(),
+  ticket_type: ticketType,    // 'standard' | 'courtside' | 'media' | 'invite'
+  quantity:    quantity,      // entier ≥ 1
+  message:     messageEl ? messageEl.value.trim() : '',
+  rgpd:        true,
+  status:      'en_attente'   // default Supabase aussi
+}
+```
+
+### Messages après V27
+
+| Cas | Message affiché |
+|---|---|
+| Insert Supabase OK (standard) | "Votre demande de billet a bien été enregistrée. L'équipe Africa2KBall reviendra vers vous rapidement." |
+| Insert Supabase OK (courtside) | "Votre demande Courtside a bien été enregistrée. Les places Courtside sont gratuites, limitées et soumises à validation par l'équipe Africa2KBall." |
+| Insert Supabase KO (erreur réseau / RLS) | "Une erreur est survenue lors de l'enregistrement de votre demande. Merci de réessayer ou de contacter l'équipe Africa2KBall." |
+| Message "préparée" | **IMPOSSIBLE** — chemin `submitForm(FORM_ENDPOINTS.billetterie)` supprimé |
+
+### Checklist tests obligatoires après déploiement
+
+```
+[ ] Push + Vercel redeploy
+[ ] Ouvrir https://africa2kball.vercel.app/billetterie.html
+[ ] Remplir : Nom, Prénom, Email, Téléphone, Standard, RGPD
+[ ] Envoyer → vérifier message succès (pas "préparée")
+[ ] Supabase → public.ticket_requests → vérifier ligne créée
+[ ] Vérifier ticket_type = standard, status = en_attente
+[ ] Refaire avec Courtside → vérifier ticket_type = courtside
+[ ] Ouvrir console navigateur → aucune erreur "CDN non chargé"
+[ ] Vérifier que le bouton se ré-active après envoi
+```
+
+### Sécurité
+
+- Clé anon publique uniquement — `SUPABASE_ANON_KEY` dans main.js.
+- Aucune `service_role` côté frontend.
+- Contrainte maintenue depuis V23.
+
+### Verdict au 26 mai 2026
+
+**GO CONDITIONNEL** — À valider par test réel après push + déploiement Vercel.

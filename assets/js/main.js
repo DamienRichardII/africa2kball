@@ -4,10 +4,69 @@
 
 /* --- ENDPOINTS — renseigner avant mise en prod --- */
 var FORM_ENDPOINTS = {
-  billetterie:  '',
+  billetterie:  '',   /* Remplacé par insert Supabase direct — voir submitBilletterieSupabase() */
   inscriptions: '',
   contact:      ''
 };
+
+/* ============================================================
+   SUPABASE — Configuration V27
+   Clé anon publique uniquement — ne jamais exposer service_role
+   ============================================================ */
+var SUPABASE_URL      = 'https://ltwwjhapdxhpkwvpabva.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0d3dqaGFwZHhocGt3dnBhYnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNjMyMjMsImV4cCI6MjA5NDgzOTIyM30.p3aUKEu2qxpygNXiI4BOXdl0VcgDw6OliLls6HbQG84'; /* anon publique — jamais service_role */
+
+var _a2kbSupabase = null;
+
+function getA2KBSupabase() {
+  if (_a2kbSupabase) return _a2kbSupabase;
+  if (!window.supabase) {
+    console.error('[Africa2KBall] Supabase CDN non chargé.');
+    return null;
+  }
+  if (!SUPABASE_ANON_KEY) {
+    console.error('[Africa2KBall] SUPABASE_ANON_KEY manquante.');
+    return null;
+  }
+  try {
+    _a2kbSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return _a2kbSupabase;
+  } catch (error) {
+    console.error('[Africa2KBall] Erreur initialisation Supabase:', error);
+    return null;
+  }
+}
+
+/* Alias pour compatibilité inscriptions */
+function getSupabaseClient() { return getA2KBSupabase(); }
+
+async function submitBilletterieToSupabase(payload) {
+  var sb = getA2KBSupabase();
+  if (!sb) {
+    throw new Error('Supabase non configuré ou CDN non chargé.');
+  }
+  var result = await sb
+    .from('ticket_requests')
+    .insert([payload])
+    .select();
+  if (result.error) {
+    console.error('[Africa2KBall] Insert ticket_requests error:', result.error);
+    throw result.error;
+  }
+  return result.data;
+}
+
+async function submitInscriptionsSupabase(payload) {
+  var sb = getA2KBSupabase();
+  if (!sb) throw new Error('Supabase non disponible.');
+  /* Table media_registrations — accepte média ET bénévole via type_inscription */
+  var result = await sb
+    .from('media_registrations')
+    .insert([payload])
+    .select();
+  if (result.error) throw result.error;
+  return result.data;
+}
 
 
 /* --- PAIEMENT COURTSIDE — désactivé, Courtside est gratuit (V23) --- */
@@ -32,10 +91,6 @@ document.addEventListener('DOMContentLoaded', function () {
   /* Fallback : data-attribute en priorité, id en secours */
   var menuToggle = document.querySelector('[data-mobile-menu-toggle]') || document.getElementById('burger');
   var mobileMenu = document.querySelector('[data-mobile-header-menu]')  || document.getElementById('mobileNav');
-
-  /* Diagnostic — retirer après validation */
-  console.log('[Africa2KBall] menuToggle:', menuToggle);
-  console.log('[Africa2KBall] mobileMenu:', mobileMenu);
 
   if (!menuToggle || !mobileMenu) return;
 
@@ -70,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
   menuToggle.addEventListener('click', function (e) {
     e.preventDefault();
     e.stopPropagation();
-    console.log('[Africa2KBall] burger clicked'); /* Diagnostic — retirer après validation */
+
     if (mobileMenu.classList.contains('is-open')) {
       closeMenu();
     } else {
@@ -362,24 +417,40 @@ function submitForm(endpoint, formData, feedbackId, msgPending, msgSuccess, onSu
 }
 
 /* ============================================================
-   FORMULAIRE BILLETTERIE
-   Champs obligatoires : Nom, Prénom, Email, Téléphone, Nb billets, Type
+   FORMULAIRE BILLETTERIE — V27
+   Insert direct dans Supabase — table ticket_requests
+   Handler async — ne dépend PLUS de submitForm() ni de FORM_ENDPOINTS
    ============================================================ */
 (function () {
   var form = document.getElementById('formBilletterie');
   if (!form) return;
   var feedbackId = 'feedbackBilletterie';
-  var MSG_SUCCESS = 'Votre demande de billets a bien été envoyée. L\'équipe Africa2KBall reviendra vers vous rapidement.';
 
-  form.addEventListener('submit', function (e) {
+  function resetFormUI() {
+    form.reset();
+    var countInput = document.getElementById('ticketCount');
+    if (countInput) countInput.value = 1;
+    var types = document.querySelectorAll('#ticketTypes .ticket-type');
+    if (types.length) {
+      types.forEach(function (l) { l.classList.remove('selected'); });
+      types[0].classList.add('selected');
+      var radio = types[0].querySelector('input[type="radio"]');
+      if (radio) radio.checked = true;
+    }
+    var infoZone = document.getElementById('courtsideInfoZone');
+    if (infoZone) infoZone.style.display = 'none';
+  }
+
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
     clearFeedback(feedbackId);
 
-    var nom     = document.getElementById('b-nom');
-    var prenom  = document.getElementById('b-prenom');
-    var email   = document.getElementById('b-email');
-    var tel     = document.getElementById('b-tel');
-    var valid   = true;
+    /* --- Validation --- */
+    var nom    = document.getElementById('b-nom');
+    var prenom = document.getElementById('b-prenom');
+    var email  = document.getElementById('b-email');
+    var tel    = document.getElementById('b-tel');
+    var valid  = true;
 
     if (!nom    || !nom.value.trim())          { setFieldError('grp-b-nom',    'err-b-nom',    true);  valid = false; }
     else setFieldError('grp-b-nom',    'err-b-nom',    false);
@@ -399,39 +470,71 @@ function submitForm(endpoint, formData, feedbackId, msgPending, msgSuccess, onSu
 
     if (!valid) return;
 
-    submitForm(
-      FORM_ENDPOINTS.billetterie,
-      new FormData(form),
-      feedbackId,
-      '',
-      MSG_SUCCESS,
-      function () {
-        form.reset();
-        var countInput = document.getElementById('ticketCount');
-        if (countInput) countInput.value = 1;
-        var firstType = document.querySelector('#ticketTypes .ticket-type');
-        if (firstType) {
-          document.querySelectorAll('#ticketTypes .ticket-type').forEach(function (l) { l.classList.remove('selected'); });
-          firstType.classList.add('selected');
-          var radio = firstType.querySelector('input[type="radio"]');
-          if (radio) radio.checked = true;
-        }
+    /* --- Collecte des données --- */
+    var ticketTypeInput = form.querySelector('input[name="ticket_type"]:checked');
+    var ticketType = ticketTypeInput ? ticketTypeInput.value : 'standard';
+    var ticketCount = document.getElementById('ticketCount');
+    var quantity = ticketCount ? parseInt(ticketCount.value, 10) || 1 : 1;
+    var messageEl = document.getElementById('b-message');
+
+    var payload = {
+      nom:         nom.value.trim(),
+      prenom:      prenom.value.trim(),
+      email:       email.value.trim(),
+      telephone:   tel.value.trim(),
+      ticket_type: ticketType,
+      quantity:    quantity,
+      message:     messageEl ? messageEl.value.trim() : '',
+      rgpd:        true,
+      status:      'en_attente'
+    };
+
+    /* --- Anti-double-submit --- */
+    var submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.dataset.originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = 'ENVOI EN COURS...';
+    }
+
+    try {
+      /* --- Insert Supabase réel --- */
+      await submitBilletterieToSupabase(payload);
+
+      if (ticketType === 'courtside') {
+        showFeedback(feedbackId, 'success',
+          'Votre demande Courtside a bien été enregistrée. Les places Courtside sont gratuites, limitées et soumises à validation par l’équipe Africa2KBall.');
+      } else {
+        showFeedback(feedbackId, 'success',
+          'Votre demande de billet a bien été enregistrée. L’équipe Africa2KBall reviendra vers vous rapidement.');
       }
-    );
+      resetFormUI();
+
+    } catch (error) {
+      console.error('[Africa2KBall] Erreur insert billetterie:', error);
+      showFeedback(feedbackId, 'error',
+        'Une erreur est survenue lors de l’enregistrement de votre demande. Merci de réessayer ou de contacter l’équipe Africa2KBall.');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = submitBtn.dataset.originalText ||
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Envoyer ma demande';
+      }
+    }
   });
 
   clearFieldErrors(['b-nom','b-prenom','b-email','b-tel','b-rgpd']);
 })();
 
 /* ============================================================
-   FORMULAIRE INSCRIPTIONS
-   Champs obligatoires : Nom, Prénom, Email, Téléphone, Type, Disponibilités, Message
+   FORMULAIRE INSCRIPTIONS — V26
+   Insert direct dans Supabase — table media_registrations
+   Gère : média ET bénévole (champ type_inscription)
    ============================================================ */
 (function () {
   var form = document.getElementById('formInscriptions');
   if (!form) return;
   var feedbackId = 'feedbackInscriptions';
-  var MSG_SUCCESS = 'Votre inscription a bien été envoyée. Merci de rejoindre l\'aventure Africa2KBall.';
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
@@ -469,14 +572,55 @@ function submitForm(endpoint, formData, feedbackId, msgPending, msgSuccess, onSu
 
     if (!valid) return;
 
-    submitForm(
-      FORM_ENDPOINTS.inscriptions,
-      new FormData(form),
-      feedbackId,
-      '',
-      MSG_SUCCESS,
-      function () { form.reset(); }
-    );
+    /* Collecte des données */
+    var typeInscInput = document.querySelector('#typeSelectorInscription input[type="radio"]:checked');
+    var typeInscription = typeInscInput ? typeInscInput.value : 'media'; /* 'media' ou 'benevole' */
+    var org     = (document.getElementById('i-org')    || {}).value || '';
+    var social  = (document.getElementById('i-social') || {}).value || '';
+
+    var payload = {
+      nom:              nom.value.trim(),
+      prenom:           prenom.value.trim(),
+      email:            email.value.trim(),
+      telephone:        tel.value.trim(),
+      type_inscription: typeInscription,
+      organisation:     org.trim()   || null,
+      social_links:     social.trim() || null,
+      disponibilites:   dispo.value.trim() || null,
+      message:          msg.value.trim(),
+      rgpd:             true,
+      status:           'en_attente'
+    };
+
+    /* Désactiver bouton pendant envoi */
+    var submitBtn = form.querySelector('.btn-submit');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Envoi en cours…'; }
+
+    /* Insert Supabase */
+    submitInscriptionsSupabase(payload).then(function () {
+      var msgOk = typeInscription === 'benevole'
+        ? 'Votre inscription bénévole a bien été enregistrée. L\'équipe Africa2KBall reviendra vers vous après étude de votre demande.'
+        : 'Votre demande d\'accréditation média a bien été enregistrée. L\'équipe Africa2KBall reviendra vers vous après étude de votre dossier.';
+      showFeedback(feedbackId, 'success', msgOk);
+      form.reset();
+      /* Réinitialiser le sélecteur de type */
+      var types = document.querySelectorAll('#typeSelectorInscription .type-option');
+      if (types.length) {
+        types.forEach(function(l){ l.classList.remove('selected'); });
+        types[0].classList.add('selected');
+        var radio = types[0].querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+      }
+    }).catch(function (err) {
+      console.error('[Africa2KBall] Erreur Supabase inscriptions:', err);
+      showFeedback(feedbackId, 'error',
+        'Une erreur est survenue lors de l\'enregistrement de votre inscription. Merci de réessayer ou de contacter l\'équipe Africa2KBall.');
+    }).finally(function () {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Envoyer mon inscription';
+      }
+    });
   });
 
   clearFieldErrors(['i-nom','i-prenom','i-email','i-tel','i-dispo','i-message','i-rgpd']);

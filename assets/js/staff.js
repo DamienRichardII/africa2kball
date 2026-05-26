@@ -183,7 +183,7 @@ function sendGuestConfirmationEmail(nomComplet, email, passType) {
     'Présentez-vous à l\'accueil avec cet email de confirmation. Un membre du staff vous y attendra.\n\n' +
     'À très bientôt !\n\n' +
     'L\'équipe Africa2KBall\n' +
-    'contact@africa2kball.com'
+    'af2kball@gmail.com'
   );
   window.open('mailto:' + encodeURIComponent(email) + '?subject=' + subject + '&body=' + body, '_blank');
 }

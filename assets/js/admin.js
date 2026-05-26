@@ -203,7 +203,7 @@ function mailCourtside(email, nom, accepted) {
       'Votre place vous sera réservée à l\'accueil. Présentez-vous avec votre email de confirmation.\n\n' +
       'À très bientôt sur le bord du terrain !\n\n' +
       'L\'équipe Africa2KBall\n' +
-      'contact@africa2kball.com'
+      'af2kball@gmail.com'
     );
   } else {
     subject = encodeURIComponent('[Africa2KBall] Votre demande Courtside — réponse');
@@ -215,7 +215,7 @@ function mailCourtside(email, nom, accepted) {
       'Rendez-vous le 07 juin 2026 au Gymnase Lino Ventura, Pavillons-sous-Bois.\n\n' +
       'Nous espérons vous voir à la prochaine édition !\n\n' +
       'L\'équipe Africa2KBall\n' +
-      'contact@africa2kball.com'
+      'af2kball@gmail.com'
     );
   }
   window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
@@ -227,8 +227,9 @@ function mailCourtside(email, nom, accepted) {
 function refreshCourtsideSupabase(id, newStatut) {
   var sb = getSupabase();
   if (!sb) return; /* clé anon non configurée — mode mock uniquement */
+  /* Colonne correcte : status (pas statut) — V26 fix */
   sb.from('ticket_requests')
-    .update({ statut: newStatut })
+    .update({ status: newStatut })
     .eq('id', id)
     .then(function(res) {
       if (res.error) { console.warn('[Africa2KBall] Supabase update error:', res.error.message); }
@@ -257,17 +258,107 @@ function refreshCourtsideListFromSupabase() {
   if (!sb) return;
   sb.from('ticket_requests')
     .select('*')
-    .eq('type', 'courtside')
+    .eq('ticket_type', 'courtside')
     .order('created_at', { ascending: false })
     .then(function(res) {
       if (res.error) { console.warn('[Africa2KBall] Supabase courtside error:', res.error.message); return; }
       if (res.data && res.data.length) {
         MOCK_COURTSIDE.length = 0;
-        res.data.forEach(function(r) { MOCK_COURTSIDE.push(r); });
+        res.data.forEach(function(r) {
+          MOCK_COURTSIDE.push({
+            id:      r.id,
+            nom:     (r.nom || '') + ' ' + (r.prenom || ''),
+            email:   r.email   || '',
+            message: r.message || '',
+            statut:  r.status  || 'En attente',
+            date:    r.created_at ? r.created_at.slice(0,10) : ''
+          });
+        });
         renderCourtsideTable();
         renderKPIs();
       }
     });
+}
+
+/* Lit TOUS les ticket_requests (standard, media, invite) depuis Supabase — V26 */
+function refreshAllTicketsFromSupabase() {
+  var sb = getSupabase();
+  if (!sb) return;
+  sb.from('ticket_requests')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .then(function(res) {
+      if (res.error) {
+        console.warn('[Africa2KBall] Supabase tickets error:', res.error.message);
+        /* Détecter erreur RLS (permission denied / unauthorized) */
+        var isRls = res.error.code === 'PGRST116' ||
+                    (res.error.message && res.error.message.toLowerCase().indexOf('permission') > -1) ||
+                    (res.error.message && res.error.message.toLowerCase().indexOf('unauthorized') > -1) ||
+                    res.error.code === '42501';
+        if (isRls && !_supabaseRlsBlocked) {
+          _supabaseRlsBlocked = true;
+          renderSupabaseBadge(true);
+        }
+        return;
+      }
+      if (!res.data) return;
+      /* Supabase répond — badge vert */
+      renderSupabaseBadge(false);
+
+      /* Séparer par type */
+      var courtside = res.data.filter(function(r){ return r.ticket_type === 'courtside'; });
+      var standard  = res.data.filter(function(r){ return r.ticket_type === 'standard';  });
+      var media     = res.data.filter(function(r){ return r.ticket_type === 'media';     });
+      var invite    = res.data.filter(function(r){ return r.ticket_type === 'invite';    });
+
+      /* Courtside → MOCK_COURTSIDE */
+      if (courtside.length) {
+        MOCK_COURTSIDE.length = 0;
+        courtside.forEach(function(r) {
+          MOCK_COURTSIDE.push({
+            id:      r.id,
+            nom:     (r.nom || '') + ' ' + (r.prenom || ''),
+            email:   r.email   || '',
+            message: r.message || '',
+            statut:  r.status  || 'En attente',
+            date:    r.created_at ? r.created_at.slice(0,10) : ''
+          });
+        });
+        renderCourtsideTable();
+      }
+
+      /* Médias → MOCK_MEDIA (si la colonne ticket_type === 'media') */
+      if (media.length) {
+        MOCK_MEDIA.length = 0;
+        media.forEach(function(r) {
+          MOCK_MEDIA.push({
+            nom:    (r.nom || '') + ' ' + (r.prenom || ''),
+            email:  r.email || '',
+            tel:    r.telephone || '',
+            org:    r.message   || '',
+            reseaux:'—',
+            statut: r.status === 'en_attente' ? 'En attente' :
+                    r.status === 'confirme'   ? 'Confirmé'   : 'Décliné'
+          });
+        });
+        renderMediaTable();
+      }
+
+      /* Standard + Invités → KPI uniquement (pas de tableau dédié actuellement) */
+      var allTickets = standard.concat(invite);
+      if (allTickets.length) {
+        renderTicketsSummary(standard.length, invite.length);
+      }
+
+      renderKPIs();
+    });
+}
+
+/* Affiche un résumé rapide Standard + Invités dans les KPI */
+function renderTicketsSummary(nbStandard, nbInvite) {
+  var el = document.getElementById('ticketsSummaryBadge');
+  if (!el) return;
+  el.textContent = nbStandard + ' standard · ' + nbInvite + ' invité(s)';
 }
 
 function refreshInvitesFromSupabase() {
@@ -300,7 +391,7 @@ function prepareAdminMail(type) {
       'Nous avons bien reçu votre demande d\'accréditation presse pour l\'édition 3 d\'Africa2KBall.\n\n' +
       'Date : 07 juin 2026\nLieu : Gymnase Lino Ventura, Pavillons-sous-Bois\n\n' +
       'Votre accréditation est confirmée. Nous reviendrons vers vous avec les détails pratiques.\n\n' +
-      'L\'équipe Africa2KBall\ncontact@africa2kball.com'
+      'L\'équipe Africa2KBall\naf2kball@gmail.com'
     );
   } else if (type === 'rappel-general') {
     subject = encodeURIComponent('[Africa2KBall] Rappel — J-7 avant le tournoi !');
@@ -317,21 +408,21 @@ function prepareAdminMail(type) {
       'Nous avons le plaisir de vous confirmer votre place Courtside pour l\'édition 3 d\'Africa2KBall.\n\n' +
       'Date : 07 juin 2026\nLieu : Gymnase Lino Ventura, Pavillons-sous-Bois\n\n' +
       'Votre place vous sera réservée à l\'accueil.\n\n' +
-      'L\'équipe Africa2KBall\ncontact@africa2kball.com'
+      'L\'équipe Africa2KBall\naf2kball@gmail.com'
     );
   } else {
     subject = encodeURIComponent('[Africa2KBall] Message de l\'organisation — Édition 3');
     body    = encodeURIComponent(
-      'Bonjour,\n\n\n\nL\'équipe Africa2KBall\ncontact@africa2kball.com'
+      'Bonjour,\n\n\n\nL\'équipe Africa2KBall\naf2kball@gmail.com'
     );
   }
 
-  window.location.href = 'mailto:contact@africa2kball.com?subject=' + subject + '&body=' + body;
+  window.location.href = 'mailto:af2kball@gmail.com?subject=' + subject + '&body=' + body;
 }
 
 function sendMailTo(email, nom) {
   var subject = encodeURIComponent('[Africa2KBall] Message de l\'équipe organisatrice');
-  var body    = encodeURIComponent('Bonjour ' + nom + ',\n\n\n\nL\'équipe Africa2KBall\ncontact@africa2kball.com');
+  var body    = encodeURIComponent('Bonjour ' + nom + ',\n\n\n\nL\'équipe Africa2KBall\naf2kball@gmail.com');
   window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
 }
 
@@ -371,12 +462,19 @@ function filterTable(inputId, tableId) {
 }
 
 /* ------------------------------------------------------------------
-   SUPABASE STATUS BADGE
+   SUPABASE STATUS BADGE — V26
+   États : configuré / RLS bloqué / non configuré
    ------------------------------------------------------------------ */
-function renderSupabaseBadge() {
+var _supabaseRlsBlocked = false; /* true si lecture bloquée par RLS */
+
+function renderSupabaseBadge(rlsBlocked) {
   var el = document.getElementById('supabaseBadge');
   if (!el) return;
-  if (SUPABASE_ANON_KEY) {
+  if (rlsBlocked) {
+    el.innerHTML = '<span style="color:#ef4444;font-weight:600;">🔒 Lecture bloquée par RLS</span> — connexion <code>authenticated</code> requise pour lire les données. Les inserts publics (billetterie, inscriptions) fonctionnent. Activez une policy temporaire <code>SELECT anon</code> dans Supabase pour l\'admin, ou connectez-vous avec un compte Supabase Auth.';
+    el.style.background = 'rgba(239,68,68,.08)';
+    el.style.borderColor = 'rgba(239,68,68,.25)';
+  } else if (SUPABASE_ANON_KEY) {
     el.innerHTML = '<span style="color:#22c55e;font-weight:600;">● Supabase configuré</span> — données en direct';
     el.style.background = 'rgba(34,197,94,.08)';
     el.style.borderColor = 'rgba(34,197,94,.25)';
@@ -568,9 +666,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   /* Tenter refresh Supabase si clé disponible */
   if (SUPABASE_ANON_KEY) {
-    refreshMediaFromSupabase();
-    refreshCourtsideListFromSupabase();
-    refreshInvitesFromSupabase();
+    refreshAllTicketsFromSupabase();   /* Standard + Courtside + Média + Invité depuis ticket_requests */
+    refreshInvitesFromSupabase();      /* Pass invités staff depuis staff_guest_passes */
   }
 
   /* Date de dernière mise à jour */
