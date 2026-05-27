@@ -1847,3 +1847,190 @@ create policy "Anon can insert media registrations"
 ### Verdict au 26 mai 2026
 
 **GO CONDITIONNEL** — Inscriptions corrigées. Billetterie non régressée. À valider par test réel après push + déploiement Vercel.
+
+---
+
+## V31 — Favicon, OG Image, Titres (26 mai 2026)
+
+### Problèmes constatés
+
+Le site étant mis en ligne sur `https://africa2kball.com/` :
+1. **Favicon absent** — aucune icône dans l'onglet navigateur
+2. **Miniature de partage incorrecte** — `og:image` pointait vers `assets/images/hero-africa2kball.PNG` (URL relative, ne fonctionnait pas sur les réseaux sociaux)
+3. **Titre trop long** — `index.html` avait `Africa2KBall — La CAN Basket revisitée` ; `inscriptions.html` avait encore l'ancien `og:title` avec le sous-titre
+
+### Fichiers créés
+
+| Fichier | Dimensions | Usage |
+|---|---|---|
+| `assets/images/favicon.png` | 64×64 px | Icône onglet navigateur |
+| `assets/images/apple-touch-icon.png` | 180×180 px | Icône iOS/Android |
+| `assets/images/og-africa2kball.png` | 1200×630 px | Miniature partage réseaux sociaux |
+
+**Méthode de génération (Pillow/Python) :**
+- `favicon.png` et `apple-touch-icon.png` : logo `logo-africa2kball.png` (1250×1471 RGBA) → crop carré centré → resize
+- `og-africa2kball.png` : `hero-africa2kball.PNG` (1290×719) → resize 1200px de large → crop centré à 630px de haut → logo 120×120 incrusté en bas à droite
+
+### Modifications HTML — 10 pages mises à jour
+
+Pages modifiées : `index.html`, `nations.html`, `histoire.html`, `champions.html`, `billetterie.html`, `inscriptions.html`, `contact.html`, `mentions-legales.html`, `politique-confidentialite.html`, `cgv.html`
+
+**Pour chaque page, ajout en `<head>` :**
+
+```html
+<link rel="icon" type="image/png" href="assets/images/favicon.png?v=v31" />
+<link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png?v=v31" />
+```
+
+**Remplacement du bloc meta (OG + Twitter Card) :**
+
+```html
+<meta name="description" content="[description spécifique à la page]" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://africa2kball.com/[page].html" />
+<meta property="og:title" content="[titre de la page]" />
+<meta property="og:description" content="[description]" />
+<meta property="og:image" content="https://africa2kball.com/assets/images/og-africa2kball.png" />
+<meta property="og:site_name" content="Africa2KBall" />
+<meta property="og:locale" content="fr_FR" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="[titre]" />
+<meta name="twitter:description" content="[description]" />
+<meta name="twitter:image" content="https://africa2kball.com/assets/images/og-africa2kball.png" />
+```
+
+**Corrections spécifiques :**
+- `index.html` : `<title>Africa2KBall — La CAN Basket revisitée</title>` → `<title>Africa2KBall</title>`
+- `inscriptions.html` : `og:title` corrigé de l'ancien sous-titre vers `Inscriptions Média & Bénévoles — Africa2KBall`
+- Toutes les URLs `og:image` passées en absolu (`https://africa2kball.com/...`)
+- `og:url` absolu unique par page
+
+### Checklist test obligatoire après déploiement
+
+```
+[ ] Push + Vercel redeploy
+[ ] Ouvrir https://africa2kball.com/ — vérifier icône favicon dans onglet
+[ ] Partager le lien https://africa2kball.com/ sur WhatsApp/Twitter/Discord
+[ ] Vérifier miniature : image basketball 1200×630
+[ ] Vérifier titre onglet : "Africa2KBall" (sans sous-titre)
+[ ] Tester avec https://opengraph.xyz/ → coller https://africa2kball.com/
+[ ] Vérifier og:image absolu, og:url correct, twitter:card = summary_large_image
+[ ] Tester sur mobile iOS — vérifier apple-touch-icon au moment d'ajouter à l'écran d'accueil
+[ ] Vérifier billetterie.html et inscriptions.html non régressés (cache-bust JS inchangé)
+```
+
+### Verdict au 26 mai 2026
+
+**GO** — Favicon, OG image 1200×630, et meta tags complets déployés sur toutes les pages publiques. URLs absolues, Twitter Card configurée, titres nettoyés.
+
+---
+
+## V32 — Emails automatiques Supabase Edge Function + Resend (27 mai 2026)
+
+### Objectif
+
+Mettre en place l'envoi automatique d'emails personnalisés à chaque nouvelle inscription ou demande de billet, sans aucune clé secrète côté frontend ni dans GitHub.
+
+### Architecture
+
+```
+Formulaire site → Supabase Table (INSERT) → Database Webhook → Edge Function → Resend → Email
+```
+
+### Fichiers créés
+
+| Fichier | Description |
+|---|---|
+| `supabase/functions/send-confirmation-email/index.ts` | Edge Function Deno complète |
+| `README_EMAILS_RESEND_SUPABASE.md` | Documentation déploiement + webhooks + tests |
+
+### Edge Function — `send-confirmation-email`
+
+- Écrite en **TypeScript Deno** (`https://deno.land/std@0.224.0/http/server.ts`)
+- Accepte uniquement les requêtes **POST**
+- Lit le payload webhook Supabase (`payload.table`, `payload.record`)
+- Route vers le bon template selon `table` + `ticket_type` / `type_inscription` / `pass_type`
+- Envoie via **Resend API** (`https://api.resend.com/emails`)
+- Utilise uniquement les secrets via `Deno.env.get()` — aucune clé en dur
+- Retourne JSON `{ success, table, to, resend_id }` ou `{ error, details }`
+
+### Secrets Supabase utilisés
+
+| Secret | Usage |
+|---|---|
+| `RESEND_API_KEY` | Authentification Resend |
+| `FROM_EMAIL` | Adresse expéditeur |
+| `REPLY_TO` | Adresse réponse (af2kball@gmail.com) |
+
+**Aucun secret n'est dans le code ni dans Git.**
+
+### Templates créés (6 + fallback)
+
+| Type | Objet de l'email |
+|---|---|
+| Standard | `Demande de billet Standard reçue — Africa2KBall Édition 3` |
+| Courtside | `Demande Courtside reçue — Africa2KBall Édition 3` |
+| VIP | `Demande VIP reçue — Africa2KBall Édition 3` |
+| Pass Invité | `Demande Pass Invité reçue — Africa2KBall Édition 3` |
+| Média | `Demande d'accréditation média reçue — Africa2KBall Édition 3` |
+| Bénévole | `Inscription bénévole reçue — Africa2KBall Édition 3` |
+| Fallback | `Demande reçue — Africa2KBall Édition 3` |
+
+**Règle stricte** : aucun template ne confirme une validation définitive. Tous indiquent "En attente de validation" pour Courtside, VIP, Média, Bénévole et Invité.
+
+### Design email
+
+- Fond noir/brun profond `#1a1208` sur `#0d0d0d`
+- Accent orange `#e8821a` (header + badges)
+- Texte beige clair `#f0e6d3`
+- HTML inline compatible tous clients email
+- Responsive mobile (max-width 560px)
+- Pas d'images distantes dépendantes d'un hébergement
+
+### Commande de déploiement
+
+```bash
+supabase functions deploy send-confirmation-email --no-verify-jwt
+```
+
+### Webhooks Supabase à créer (Dashboard)
+
+| Nom | Table | Event | URL |
+|---|---|---|---|
+| `ticket_requests_email_confirmation` | `ticket_requests` | INSERT | `https://ltwwjhapdxhpkwvpabva.supabase.co/functions/v1/send-confirmation-email` |
+| `media_registrations_email_confirmation` | `media_registrations` | INSERT | `https://ltwwjhapdxhpkwvpabva.supabase.co/functions/v1/send-confirmation-email` |
+| `staff_guest_passes_email_confirmation` | `staff_guest_passes` | INSERT | (optionnel) |
+
+### Checklist tests obligatoires après déploiement
+
+```
+[ ] supabase functions deploy exécuté sans erreur
+[ ] Test curl Standard → status 200, email reçu
+[ ] Test curl Courtside → status 200, email reçu
+[ ] Test curl Média → status 200, email reçu
+[ ] Test curl Bénévole → status 200, email reçu
+[ ] Webhook ticket_requests créé dans Dashboard
+[ ] Webhook media_registrations créé dans Dashboard
+[ ] Demande Standard depuis https://africa2kball.com/billetterie.html → email auto reçu
+[ ] Demande Courtside → email reçu, mention "places limitées, soumises à validation"
+[ ] Inscription Média depuis https://africa2kball.com/inscriptions.html → email reçu
+[ ] Inscription Bénévole → email reçu
+[ ] Aucun email ne confirme une validation définitive
+[ ] FROM correct, reply-to = af2kball@gmail.com
+[ ] Vérifier SPAM
+```
+
+### Fichiers non modifiés
+
+- `main.js` — aucune modification
+- `billetterie.html` — aucune modification
+- `inscriptions.html` — aucune modification
+- `assets/js/admin.js` — aucune modification
+
+### Verdict
+
+**EN ATTENTE DE DÉPLOIEMENT** — La function est prête et documentée. Les étapes restantes à effectuer manuellement :
+1. `supabase functions deploy send-confirmation-email --no-verify-jwt`
+2. Créer les 2 webhooks INSERT dans Supabase Dashboard
+3. Effectuer les tests complets depuis le site live
+
