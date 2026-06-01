@@ -2034,3 +2034,63 @@ supabase functions deploy send-confirmation-email --no-verify-jwt
 2. Créer les 2 webhooks INSERT dans Supabase Dashboard
 3. Effectuer les tests complets depuis le site live
 
+
+---
+
+## Mode maintenance temporaire (01 juin 2026)
+
+### Fichiers créés
+
+| Fichier | Rôle |
+|---|---|
+| `maintenance.html` | Page de maintenance (noindex, design Africa2KBall) |
+| `vercel.json` | Redirection temporaire toutes pages → maintenance.html |
+
+### Message affiché
+
+> Maintenance actuellement en cours, le site sera bientôt disponible.
+
+### Redirection vercel.json
+
+```json
+{
+  "redirects": [
+    {
+      "source": "/((?!maintenance\\.html$|assets/|favicon\\.png|robots\\.txt|sitemap\\.xml).*)",
+      "destination": "/maintenance.html",
+      "permanent": false
+    }
+  ]
+}
+```
+
+`permanent: false` = redirection 307 temporaire (pas d'impact SEO durable).
+
+### Pages redirigées
+
+index.html, nations.html, histoire.html, champions.html, billetterie.html, inscriptions.html, contact.html, mentions-legales.html, politique-confidentialite.html, cgv.html
+
+### Exclus de la redirection (toujours accessibles)
+
+maintenance.html, assets/\*, favicon.png, robots.txt, sitemap.xml
+
+### Supabase, formulaires, données
+
+Aucun fichier modifié. Aucune donnée touchée. Toutes les pages existent toujours.
+
+### ⚠️ Désactiver le mode maintenance
+
+1. Ouvrir `vercel.json`
+2. Supprimer (ou commenter) le bloc `"redirects"` entier
+3. Le fichier vide minimum :
+```json
+{}
+```
+4. Push :
+```bash
+git add vercel.json
+git commit -m "Désactivation mode maintenance Africa2KBall"
+git push origin main
+```
+5. Vérifier que https://africa2kball.com/ affiche bien index.html
+
